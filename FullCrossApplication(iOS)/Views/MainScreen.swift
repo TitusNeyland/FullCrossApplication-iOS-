@@ -36,7 +36,7 @@ struct MainScreen: View {
             Text("Contact Support") // Replace with actual ContactSupportScreen
         }
         .sheet(isPresented: $showHelpAndFaq) {
-            Text("Help & FAQ") // Replace with actual HelpAndFaqScreen
+            HelpAndFaqScreen()
         }
         .sheet(isPresented: $showChangePassword) {
             Text("Change Password") // Replace with actual ChangePasswordScreen
