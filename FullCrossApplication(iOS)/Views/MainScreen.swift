@@ -33,7 +33,7 @@ struct MainScreen: View {
             }
         }
         .sheet(isPresented: $showContactSupport) {
-            Text("Contact Support") // Replace with actual ContactSupportScreen
+            ContactSupportScreen()
         }
         .sheet(isPresented: $showHelpAndFaq) {
             HelpAndFaqScreen()
