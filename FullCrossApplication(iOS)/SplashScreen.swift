@@ -3,7 +3,7 @@ import SwiftUI
 struct SplashScreen: View {
     let onSplashScreenFinish: () -> Void
     
-    @State private var startAnimation = false
+    @State private var startAnimation = false 
     @State private var offsetY: CGFloat = 0
     
     var body: some View {
