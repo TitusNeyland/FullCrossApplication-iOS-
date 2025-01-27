@@ -6,9 +6,18 @@
 //
 
 import SwiftUI
+// Import Firebase when ready
+// import FirebaseCore
 
 @main
 struct FullCrossApplication_iOS_App: App {
+    init() {
+        // Configure Firebase when ready
+        // FirebaseApp.configure()
+        
+        // Configure other services here
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()

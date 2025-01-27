@@ -7,28 +7,67 @@
 
 import SwiftUI
 
+enum Screen {
+    case splash
+    case login
+    case signUp
+    case main
+}
+
 struct ContentView: View {
-    @State private var showingSplash = true
+    @StateObject private var authViewModel = AuthViewModel()
+    @State private var currentScreen: Screen = .splash
     
     var body: some View {
         Group {
-            if showingSplash {
+            switch currentScreen {
+            case .splash:
                 SplashScreen {
                     withAnimation {
-                        showingSplash = false
+                        currentScreen = authViewModel.currentUser != nil ? .main : .login
                     }
                 }
-            } else {
-                // Your main app content here
-                VStack {
-                    Image(systemName: "globe")
-                        .imageScale(.large)
-                        .foregroundStyle(.tint)
-                    Text("Hello, world!")
-                }
-                .padding()
+                
+            case .login:
+                LoginScreen(
+                    onLoginSuccess: {
+                        withAnimation {
+                            currentScreen = .main
+                        }
+                    },
+                    onSignUpClick: {
+                        withAnimation {
+                            currentScreen = .signUp
+                        }
+                    }
+                )
+                
+            case .signUp:
+                SignUpScreen(
+                    onSignUpSuccess: {
+                        withAnimation {
+                            currentScreen = .main
+                        }
+                    },
+                    onBackToLogin: {
+                        withAnimation {
+                            currentScreen = .login
+                        }
+                    }
+                )
+                
+            case .main:
+                MainScreen(
+                    onSignOut: {
+                        authViewModel.signOut()
+                        withAnimation {
+                            currentScreen = .login
+                        }
+                    }
+                )
             }
         }
+        .environmentObject(authViewModel)
     }
 }
 
