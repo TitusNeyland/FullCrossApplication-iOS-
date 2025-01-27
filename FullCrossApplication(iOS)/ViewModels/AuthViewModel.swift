@@ -16,7 +16,7 @@ class AuthViewModel: ObservableObject {
             self.isLoading = false
             // Simulate success
             if email == "test@test.com" && password == "password" {
-                self.currentUser = User(id: "1", email: email)
+                self.currentUser = User(id: "1", email: email, roles: ["user"])
             } else {
                 self.error = "Invalid email or password"
             }
@@ -32,7 +32,7 @@ class AuthViewModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             self.isLoading = false
             // Simulate success
-            self.currentUser = User(id: UUID().uuidString, email: email)
+            self.currentUser = User(id: UUID().uuidString, email: email, roles: ["user"])
         }
     }
     
@@ -53,4 +53,9 @@ class AuthViewModel: ObservableObject {
 struct User: Equatable {
     let id: String
     let email: String
+    let roles: Set<String>
+    
+    var isAdmin: Bool {
+        roles.contains("admin")
+    }
 } 
