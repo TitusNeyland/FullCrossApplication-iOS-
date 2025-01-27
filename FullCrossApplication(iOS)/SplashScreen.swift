@@ -9,7 +9,7 @@ struct SplashScreen: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background gradient
+                // Background gradient 
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color(.systemBackground),
