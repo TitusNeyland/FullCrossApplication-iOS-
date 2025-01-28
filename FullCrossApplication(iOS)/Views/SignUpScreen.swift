@@ -82,10 +82,11 @@ struct SignUpScreen: View {
                     Button(action: {
                         if validateInputs() {
                             authViewModel.signUp(
+                                firstName: firstName,
+                                lastName: lastName,
                                 email: email,
                                 password: password,
-                                firstName: firstName,
-                                lastName: lastName
+                                roles: []
                             )
                         }
                     }) {
