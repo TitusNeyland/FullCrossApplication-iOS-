@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0">
+    <entity name="Note" representedClassName="Note" syncable="YES">
+        <attribute name="id" optional="NO" attributeType="Integer 64" defaultValueString="0"/>
+        <attribute name="date" optional="NO" attributeType="Date"/>
+        <attribute name="title" optional="NO" attributeType="String"/>
+        <attribute name="content" optional="NO" attributeType="String"/>
+        <attribute name="verseReference" optional="YES" attributeType="String"/>
+        <attribute name="type" optional="NO" attributeType="String"/>
+        <attribute name="userId" optional="NO" attributeType="String"/>
+    </entity>
+</model> 
