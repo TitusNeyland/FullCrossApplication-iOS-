@@ -11,67 +11,111 @@ struct DiscussionDetailView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Discussion Content
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(discussion.title)
-                            .font(.title2)
-                            .bold()
-                        
-                        Text("Posted by \(discussion.authorName)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Text(discussion.content)
-                            .font(.body)
-                            .padding(.top, 4)
-                        
-                        HStack(spacing: 16) {
-                            Button(action: {
-                                viewModel.likeDiscussion(discussion.id)
-                            }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: discussion.likedByUsers.contains(Auth.auth().currentUser?.uid ?? "") ? "heart.fill" : "heart")
-                                    Text("\(discussion.likes)")
-                                }
-                            }
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Discussion Content
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(discussion.title)
+                                .font(.title2)
+                                .bold()
                             
-                            HStack(spacing: 4) {
-                                Image(systemName: "bubble.right")
-                                Text("\(discussion.commentCount)")
-                            }
-                            
-                            Spacer()
-                            
-                            Text(Date(timeIntervalSince1970: discussion.timestamp), style: .relative)
-                                .font(.caption)
+                            Text("Posted by \(discussion.authorName)")
+                                .font(.subheadline)
                                 .foregroundColor(.secondary)
+                            
+                            Text(discussion.content)
+                                .font(.body)
+                                .padding(.top, 4)
+                            
+                            HStack(spacing: 16) {
+                                Button(action: {
+                                    viewModel.likeDiscussion(discussion.id)
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: discussion.likedByUsers.contains(Auth.auth().currentUser?.uid ?? "") ? "heart.fill" : "heart")
+                                        Text("\(discussion.likes)")
+                                    }
+                                }
+                                
+                                HStack(spacing: 4) {
+                                    Image(systemName: "bubble.right")
+                                    Text("\(discussion.commentCount)")
+                                }
+                                
+                                Spacer()
+                                
+                                Text(formatTimestamp(discussion.timestamp))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding()
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        
+                        // Comments Section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Comments")
+                                .font(.headline)
+                                .padding(.horizontal)
+                            
+                            ForEach(discussion.comments.filter { !$0.isReply }) { comment in
+                                CommentView(
+                                    comment: comment,
+                                    onReply: { replyingTo = comment },
+                                    onDelete: {
+                                        viewModel.deleteComment(discussionId: discussion.id, commentId: comment.id)
+                                    },
+                                    viewModel: viewModel,
+                                    discussionId: discussion.id
+                                )
+                                Divider()
+                            }
                         }
                     }
                     .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(12)
-                    
-                    // Comments Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Comments")
-                            .font(.headline)
-                            .padding(.horizontal)
-                        
-                        ForEach(discussion.comments) { comment in
-                            CommentView(
-                                comment: comment,
-                                onReply: { replyingTo = comment },
-                                onDelete: {
-                                    viewModel.deleteComment(discussionId: discussion.id, commentId: comment.id)
-                                }
-                            )
-                            Divider()
-                        }
-                    }
+                    .padding(.bottom, 60) // Add padding for the input field
                 }
-                .padding()
+                
+                // Persistent comment input
+                VStack(spacing: 0) {
+                    if let replyingTo = replyingTo {
+                        HStack {
+                            Text("Replying to \(replyingTo.authorName)")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                            
+                            Spacer()
+                            
+                            Button(action: { self.replyingTo = nil }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .background(Color(.systemBackground))
+                    }
+                    
+                    CommentInputView(
+                        text: $newComment,
+                        placeholder: replyingTo != nil ? "Write a reply..." : "Add a comment",
+                        onSend: {
+                            if !newComment.isEmpty {
+                                viewModel.addComment(
+                                    discussionId: discussion.id,
+                                    content: newComment,
+                                    parentCommentId: replyingTo?.id,
+                                    replyToAuthorName: replyingTo?.authorName
+                                )
+                                newComment = ""
+                                replyingTo = nil
+                            }
+                        },
+                        onCancelReply: replyingTo != nil ? { replyingTo = nil } : nil
+                    )
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -81,49 +125,6 @@ struct DiscussionDetailView: View {
                     }
                 }
             }
-            
-            // Comment Input
-            VStack {
-                if let replyingTo = replyingTo {
-                    HStack {
-                        Text("Replying to \(replyingTo.authorName)")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                        
-                        Spacer()
-                        
-                        Button(action: { self.replyingTo = nil }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-                
-                HStack {
-                    TextField("Add a comment...", text: $newComment)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    Button(action: {
-                        if !newComment.isEmpty {
-                            viewModel.addComment(
-                                discussionId: discussion.id,
-                                content: newComment,
-                                parentCommentId: replyingTo?.id,
-                                replyToAuthorName: replyingTo?.authorName
-                            )
-                            newComment = ""
-                            replyingTo = nil
-                        }
-                    }) {
-                        Image(systemName: "paperplane.fill")
-                            .foregroundColor(.blue)
-                    }
-                    .disabled(newComment.isEmpty)
-                }
-                .padding()
-            }
-            .background(Color(.systemBackground))
         }
     }
 }
@@ -133,6 +134,16 @@ struct CommentView: View {
     let onReply: () -> Void
     let onDelete: () -> Void
     @State private var showDeleteAlert = false
+    @State private var showReplies = false
+    @ObservedObject var viewModel: NotesViewModel
+    let discussionId: String
+    
+    private var replies: [Comment] {
+        viewModel.discussions
+            .first(where: { $0.id == discussionId })?
+            .comments
+            .filter { $0.parentCommentId == comment.id } ?? []
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -161,16 +172,53 @@ struct CommentView: View {
                 .font(.body)
             
             HStack {
-                Text(Date(timeIntervalSince1970: comment.timestamp), style: .relative)
+                Text(formatTimestamp(comment.timestamp))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
                 Spacer()
                 
                 if !comment.isReply {
+                    if comment.replyCount > 0 {
+                        Button(action: { 
+                            withAnimation {
+                                showReplies.toggle()
+                            }
+                        }) {
+                            HStack(spacing: 4) {
+                                Text(showReplies ? "Hide replies" : "Show \(comment.replyCount) replies")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                                Image(systemName: showReplies ? "chevron.up" : "chevron.down")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                    
                     Button("Reply", action: onReply)
                         .font(.caption)
+                        .padding(.leading, 8)
                 }
+            }
+            
+            if showReplies && !replies.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(replies) { reply in
+                        Divider()
+                        CommentView(
+                            comment: reply,
+                            onReply: onReply,
+                            onDelete: {
+                                viewModel.deleteComment(discussionId: discussionId, commentId: reply.id)
+                            },
+                            viewModel: viewModel,
+                            discussionId: discussionId
+                        )
+                        .padding(.leading, 16)
+                    }
+                }
+                .padding(.top, 8)
             }
         }
         .padding()

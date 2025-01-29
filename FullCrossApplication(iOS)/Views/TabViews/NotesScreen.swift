@@ -283,12 +283,14 @@ struct DiscussionCard: View {
             showDiscussionDetail = true
         }) {
             VStack(alignment: .leading, spacing: 12) {
-                // Title and Author
-                VStack(alignment: .leading, spacing: 4) {
+                // Title and Timestamp
+                HStack {
                     Text(discussion.title)
                         .font(.headline)
                     
-                    Text("Posted by \(discussion.authorName)")
+                    Spacer()
+                    
+                    Text(formatTimestamp(discussion.timestamp))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -298,27 +300,29 @@ struct DiscussionCard: View {
                     .font(.body)
                     .lineLimit(3)
                 
-                // Interaction Stats
-                HStack(spacing: 16) {
-                    Button(action: {
-                        viewModel.likeDiscussion(discussion.id)
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: discussion.likedByUsers.contains(Auth.auth().currentUser?.uid ?? "") ? "heart.fill" : "heart")
-                            Text("\(discussion.likes)")
-                        }
-                    }
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "bubble.right")
-                        Text("\(discussion.commentCount)")
-                    }
+                // Author and Interaction Stats
+                HStack {
+                    Text("Posted by \(discussion.authorName)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     
                     Spacer()
                     
-                    Text(Date(timeIntervalSince1970: discussion.timestamp), style: .relative)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            viewModel.likeDiscussion(discussion.id)
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: discussion.likedByUsers.contains(Auth.auth().currentUser?.uid ?? "") ? "heart.fill" : "heart")
+                                Text("\(discussion.likes)")
+                            }
+                        }
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "bubble.right")
+                            Text("\(discussion.commentCount)")
+                        }
+                    }
                 }
             }
             .padding()
@@ -327,8 +331,9 @@ struct DiscussionCard: View {
             .shadow(radius: 2)
         }
         .buttonStyle(PlainButtonStyle())
-        .sheet(isPresented: $showDiscussionDetail) {
+        .fullScreenCover(isPresented: $showDiscussionDetail) {
             DiscussionDetailView(discussion: discussion, viewModel: viewModel)
+                .edgesIgnoringSafeArea(.bottom)
         }
     }
 }
@@ -387,4 +392,6 @@ struct AddNoteView: View {
             }
         }
     }
-} 
+}
+
+// Remove the formatTimestamp function from here 
