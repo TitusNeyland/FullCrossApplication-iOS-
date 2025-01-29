@@ -6,15 +6,21 @@
 //
 
 import SwiftUI
-// Import Firebase when ready
-// import FirebaseCore
+import FirebaseCore
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+  func application(_ application: UIApplication,
+                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+    FirebaseApp.configure()
+    return true
+  }
+}
 
 @main
 struct FullCrossApplication_iOS_App: App {
     init() {
         // Configure Firebase when ready
-        // FirebaseApp.configure()
-        
+        @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
         // Configure other services here
     }
     
