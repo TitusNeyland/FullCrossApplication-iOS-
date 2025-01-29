@@ -20,23 +20,30 @@ class FirestoreNoteRepository: NoteRepository {
         let startOfDay = calendar.startOfDay(for: date)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
         
+        print("Fetching notes between \(startOfDay) and \(endOfDay)")
+        
         return db.collection("notes")
             .whereField("userId", isEqualTo: userId)
             .whereField("date", isGreaterThanOrEqualTo: startOfDay)
             .whereField("date", isLessThan: endOfDay)
+            .order(by: "date", descending: true)
             .snapshotPublisher()
             .map { snapshot in
-                snapshot.documents.compactMap { document -> Note? in
+                print("Found \(snapshot.documents.count) documents")
+                return snapshot.documents.compactMap { document -> Note? in
+                    print("Processing document ID: \(document.documentID)")
+                    
                     guard let date = document.get("date") as? Timestamp,
                           let title = document.get("title") as? String,
                           let content = document.get("content") as? String,
                           let typeRaw = document.get("type") as? String,
                           let type = NoteType(rawValue: typeRaw) else {
+                        print("Failed to parse document \(document.documentID)")
                         return nil
                     }
                     
-                    return Note(
-                        id: Int64(document.documentID) ?? 0,
+                    let note = Note(
+                        id: document.documentID,
                         date: date.dateValue(),
                         title: title,
                         content: content,
@@ -44,6 +51,8 @@ class FirestoreNoteRepository: NoteRepository {
                         type: type,
                         userId: userId
                     )
+                    print("Successfully parsed note: \(note.title)")
+                    return note
                 }
             }
             .eraseToAnyPublisher()
@@ -65,7 +74,7 @@ class FirestoreNoteRepository: NoteRepository {
                     }
                     
                     return Note(
-                        id: Int64(document.documentID) ?? 0,
+                        id: document.documentID,
                         date: date.dateValue(),
                         title: title,
                         content: content,
@@ -79,7 +88,7 @@ class FirestoreNoteRepository: NoteRepository {
     }
     
     func insertNote(_ note: Note) async throws {
-        try await db.collection("notes").addDocument(data: [
+        let docRef = try await db.collection("notes").addDocument(data: [
             "date": Timestamp(date: note.date),
             "title": note.title,
             "content": note.content,
@@ -87,11 +96,14 @@ class FirestoreNoteRepository: NoteRepository {
             "type": note.type.rawValue,
             "userId": note.userId
         ])
+        
+        // Store the document ID directly instead of trying to convert it to Int64
+        print("Created note with ID: \(docRef.documentID)")
     }
     
     func updateNote(_ note: Note) async throws {
         try await db.collection("notes")
-            .document(String(note.id))
+            .document(note.id)
             .updateData([
                 "date": Timestamp(date: note.date),
                 "title": note.title,
@@ -103,7 +115,7 @@ class FirestoreNoteRepository: NoteRepository {
     
     func deleteNote(_ note: Note) async throws {
         try await db.collection("notes")
-            .document(String(note.id))
+            .document(note.id)
             .delete()
     }
     
@@ -112,13 +124,16 @@ class FirestoreNoteRepository: NoteRepository {
             .whereField("userId", isEqualTo: userId)
             .snapshotPublisher()
             .map { snapshot in
+                let calendar = Calendar.current
                 let dates = snapshot.documents.compactMap { document -> Date? in
                     guard let timestamp = document.get("date") as? Timestamp else {
                         return nil
                     }
-                    return timestamp.dateValue()
+                    // Normalize to start of day
+                    return calendar.startOfDay(for: timestamp.dateValue())
                 }
-                return Array(Set(dates)).sorted()
+                // Use Set to ensure uniqueness, then convert back to sorted array
+                return Array(Set(dates)).sorted(by: >)
             }
             .eraseToAnyPublisher()
     }
