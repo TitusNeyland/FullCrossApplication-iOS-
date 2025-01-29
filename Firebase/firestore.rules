@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /discussions/{discussionId} {
+      allow read: if true;  // Anyone can read discussions
+      allow create: if request.auth != null;  // Must be logged in to create
+      allow update: if request.auth != null;  // Must be logged in to update
+      allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;  // Only author can delete
+      
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null;
+        allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+      }
+    }
+  }
+} 

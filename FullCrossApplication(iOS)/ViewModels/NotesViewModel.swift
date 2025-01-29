@@ -15,6 +15,7 @@ class NotesViewModel: ObservableObject {
     private let auth = Auth.auth()
     private var cancellables = Set<AnyCancellable>()
     private var discussionsListener: ListenerRegistration?
+    private let calendar = Calendar.current
     
     init(noteRepository: NoteRepository = FirestoreNoteRepository()) {
         self.noteRepository = noteRepository
@@ -98,7 +99,6 @@ class NotesViewModel: ObservableObject {
             do {
                 let userId = try getCurrentUserId()
                 let note = Note(
-                    id: 0, // Firestore will generate this
                     date: Date(),
                     title: title,
                     content: content,
@@ -121,10 +121,23 @@ class NotesViewModel: ObservableObject {
             do {
                 let userId = try getCurrentUserId()
                 if note.userId == userId {
+                    // Update UI state immediately
+                    await MainActor.run {
+                        self.notes = self.notes.filter { $0.id != note.id }
+                        // Also update dates with notes if needed
+                        if !self.notes.contains(where: { calendar.startOfDay(for: $0.date) == calendar.startOfDay(for: note.date) }) {
+                            self.datesWithNotes.remove(calendar.startOfDay(for: note.date))
+                        }
+                    }
+                    // Then delete from Firestore
                     try await noteRepository.deleteNote(note)
                 }
             } catch {
                 print("Error deleting note: \(error)")
+                // Revert the UI state if deletion fails
+                await MainActor.run {
+                    loadNotesForDate(selectedDate)
+                }
             }
         }
     }
@@ -149,17 +162,55 @@ class NotesViewModel: ObservableObject {
     private func loadDiscussions() {
         discussionsListener?.remove()
         
+        print("Setting up discussions listener...")
+        
         discussionsListener = db.collection("discussions")
             .order(by: "timestamp", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
-                guard let documents = snapshot?.documents else {
-                    print("Error fetching discussions: \(error?.localizedDescription ?? "Unknown error")")
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("Error fetching discussions: \(error.localizedDescription)")
                     return
                 }
                 
-                // Implementation for discussions will be added in the next part
-                // This will include mapping Firestore documents to Discussion objects
-                // and setting up nested listeners for comments
+                guard let documents = snapshot?.documents else {
+                    print("No documents found in discussions collection")
+                    return
+                }
+                
+                print("Found \(documents.count) discussions")
+                
+                let discussions = documents.compactMap { document -> Discussion? in
+                    do {
+                        let data = document.data()
+                        let discussion = Discussion(
+                            id: document.documentID,
+                            title: data["title"] as? String ?? "",
+                            content: data["content"] as? String ?? "",
+                            authorId: data["authorId"] as? String ?? "",
+                            authorName: data["authorName"] as? String ?? "",
+                            timestamp: data["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970,
+                            likes: data["likes"] as? Int ?? 0,
+                            commentCount: data["commentCount"] as? Int ?? 0,
+                            tags: data["tags"] as? [String] ?? [],
+                            comments: [],
+                            likedByUsers: Set(data["likedByUsers"] as? [String] ?? [])
+                        )
+                        print("Successfully parsed discussion: \(discussion.title)")
+                        return discussion
+                    } catch {
+                        print("Error parsing discussion document: \(error)")
+                        return nil
+                    }
+                }
+                
+                print("Processed \(discussions.count) valid discussions")
+                
+                DispatchQueue.main.async {
+                    self.discussions = discussions
+                    print("Updated discussions array, now contains \(self.discussions.count) items")
+                }
             }
     }
     

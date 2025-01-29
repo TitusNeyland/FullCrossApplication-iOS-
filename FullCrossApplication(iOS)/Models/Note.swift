@@ -1,7 +1,7 @@
 import Foundation
 
 public struct Note: Identifiable {
-    public let id: Int64
+    public let id: String
     public let date: Date
     public let title: String
     public let content: String
@@ -9,7 +9,15 @@ public struct Note: Identifiable {
     public let type: NoteType
     public let userId: String
     
-    public init(id: Int64, date: Date, title: String, content: String, verseReference: String?, type: NoteType, userId: String) {
+    public init(
+        id: String = UUID().uuidString,
+        date: Date,
+        title: String,
+        content: String,
+        verseReference: String?,
+        type: NoteType,
+        userId: String
+    ) {
         self.id = id
         self.date = date
         self.title = title

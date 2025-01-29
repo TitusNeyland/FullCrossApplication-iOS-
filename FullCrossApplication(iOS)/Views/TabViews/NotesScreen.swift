@@ -79,14 +79,22 @@ struct PersonalNotesView: View {
     @Binding var expandedDate: Date?
     let onDeleteNote: (Note) -> Void
     
+    private func groupedNotesByDate() -> [(Date, [Note])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: notes) { note in
+            calendar.startOfDay(for: note.date)
+        }
+        return grouped.sorted { $0.key > $1.key }
+    }
+    
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 8) {
-                ForEach(Array(datesWithNotes).sorted(by: >), id: \.self) { date in
+                ForEach(groupedNotesByDate(), id: \.0) { date, dateNotes in
                     DateCard(
                         date: date,
                         isExpanded: date == expandedDate,
-                        notes: date == expandedDate ? notes : [],
+                        notes: date == expandedDate ? dateNotes : [],
                         onExpandClick: {
                             withAnimation {
                                 if expandedDate == date {
@@ -111,8 +119,6 @@ struct DateCard: View {
     let notes: [Note]
     let onExpandClick: () -> Void
     let onDeleteNote: (Note) -> Void
-    @State private var showDeleteDialog = false
-    @State private var noteToDelete: Note?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -135,8 +141,7 @@ struct DateCard: View {
                 ForEach(notes) { note in
                     Divider()
                     NoteItem(note: note) {
-                        noteToDelete = note
-                        showDeleteDialog = true
+                        onDeleteNote(note)
                     }
                 }
             }
@@ -144,22 +149,13 @@ struct DateCard: View {
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: isExpanded ? 4 : 1)
-        .alert("Delete Note", isPresented: $showDeleteDialog) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
-                if let note = noteToDelete {
-                    onDeleteNote(note)
-                }
-            }
-        } message: {
-            Text("Are you sure you want to delete this note?")
-        }
     }
 }
 
 struct NoteItem: View {
     let note: Note
     let onDelete: () -> Void
+    @State private var showDeleteConfirmation = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -177,7 +173,9 @@ struct NoteItem: View {
                 
                 Spacer()
                 
-                Button(action: onDelete) {
+                Button(action: {
+                    showDeleteConfirmation = true
+                }) {
                     Image(systemName: "trash")
                         .foregroundColor(.red)
                 }
@@ -204,6 +202,14 @@ struct NoteItem: View {
             }
         }
         .padding()
+        .alert("Delete Note", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                onDelete()
+            }
+        } message: {
+            Text("Are you sure you want to delete this note?")
+        }
     }
 }
 
@@ -245,11 +251,76 @@ struct NoteRow: View {
 }
 
 struct DiscussionsView: View {
-    let viewModel: NotesViewModel
+    @ObservedObject var viewModel: NotesViewModel
     
     var body: some View {
-        Text("Discussions Coming Soon")
-            .foregroundColor(.secondary)
+        ScrollView {
+            if viewModel.discussions.isEmpty {
+                Text("No discussions yet")
+                    .foregroundColor(.secondary)
+                    .padding()
+            } else {
+                LazyVStack(spacing: 16) {
+                    ForEach(viewModel.discussions) { discussion in
+                        DiscussionCard(discussion: discussion, viewModel: viewModel)
+                            .padding(.horizontal)
+                    }
+                }
+                .padding(.vertical)
+            }
+        }
+    }
+}
+
+struct DiscussionCard: View {
+    let discussion: Discussion
+    let viewModel: NotesViewModel
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Title and Author
+            VStack(alignment: .leading, spacing: 4) {
+                Text(discussion.title)
+                    .font(.headline)
+                
+                Text("Posted by \(discussion.authorName)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            // Content
+            Text(discussion.content)
+                .font(.body)
+                .lineLimit(3)
+            
+            // Interaction Stats
+            HStack(spacing: 16) {
+                Button(action: {
+                    viewModel.likeDiscussion(discussion.id)
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: discussion.likedByUsers.contains(Auth.auth().currentUser?.uid ?? "") ? "heart.fill" : "heart")
+                        Text("\(discussion.likes)")
+                    }
+                }
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "bubble.right")
+                    Text("\(discussion.commentCount)")
+                }
+                
+                Spacer()
+                
+                Text(Date(timeIntervalSince1970: discussion.timestamp), style: .relative)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding()
+        .background(colorScheme == .dark ? Color(.systemGray6) : .white)
+        .cornerRadius(12)
+        .shadow(radius: 2)
     }
 }
 
