@@ -1,24 +1,34 @@
+import Foundation
+
 struct PasswordValidator {
     static func validatePassword(_ password: String) -> Bool {
-        let minLength = 8
-        let hasUppercase = password.range(of: "[A-Z]", options: .regularExpression) != nil
-        let hasLowercase = password.range(of: "[a-z]", options: .regularExpression) != nil
-        let hasDigit = password.range(of: "[0-9]", options: .regularExpression) != nil
-        let hasSpecialChar = password.range(of: "[@$!%*?&#]", options: .regularExpression) != nil
+        // At least 8 characters
+        guard password.count >= 8 else { return false }
         
-        return password.count >= minLength &&
-            hasUppercase &&
-            hasLowercase &&
-            hasDigit &&
-            hasSpecialChar
+        // At least one uppercase letter
+        guard password.contains(where: { $0.isUppercase }) else { return false }
+        
+        // At least one lowercase letter
+        guard password.contains(where: { $0.isLowercase }) else { return false }
+        
+        // At least one number
+        guard password.contains(where: { $0.isNumber }) else { return false }
+        
+        // At least one special character
+        let specialCharacters = CharacterSet(charactersIn: "!@#$%^&*(),.?\":{}|<>")
+        guard password.unicodeScalars.contains(where: { specialCharacters.contains($0) }) else { return false }
+        
+        return true
     }
     
     static func getPasswordRequirementsMessage() -> String {
-        return "Password must contain at least:\n" +
-            "• 8 characters\n" +
-            "• One uppercase letter\n" +
-            "• One lowercase letter\n" +
-            "• One number\n" +
-            "• One special character (@$!%*?&#)"
+        """
+        Password must contain:
+        • At least 8 characters
+        • At least one uppercase letter
+        • At least one lowercase letter
+        • At least one number
+        • At least one special character
+        """
     }
 } 
