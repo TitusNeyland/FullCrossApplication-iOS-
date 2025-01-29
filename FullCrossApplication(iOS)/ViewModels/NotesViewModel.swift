@@ -197,6 +197,10 @@ class NotesViewModel: ObservableObject {
                             comments: [],
                             likedByUsers: Set(data["likedByUsers"] as? [String] ?? [])
                         )
+                        
+                        // Set up comments listener for this discussion
+                        self.setupCommentsListener(for: discussion)
+                        
                         print("Successfully parsed discussion: \(discussion.title)")
                         return discussion
                     } catch {
@@ -210,6 +214,55 @@ class NotesViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     self.discussions = discussions
                     print("Updated discussions array, now contains \(self.discussions.count) items")
+                }
+            }
+    }
+    
+    private func setupCommentsListener(for discussion: Discussion) {
+        db.collection("discussions")
+            .document(discussion.id)
+            .collection("comments")
+            .order(by: "timestamp", descending: false)
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("Error fetching comments: \(error.localizedDescription)")
+                    return
+                }
+                
+                let comments = snapshot?.documents.compactMap { document -> Comment? in
+                    let data = document.data()
+                    return Comment(
+                        id: document.documentID,
+                        discussionId: discussion.id,
+                        content: data["content"] as? String ?? "",
+                        authorId: data["authorId"] as? String ?? "",
+                        authorName: data["authorName"] as? String ?? "",
+                        timestamp: data["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970,
+                        parentCommentId: data["parentCommentId"] as? String,
+                        replyToAuthorName: data["replyToAuthorName"] as? String,
+                        replyCount: data["replyCount"] as? Int ?? 0,
+                        isReply: data["isReply"] as? Bool ?? false
+                    )
+                } ?? []
+                
+                // Group comments by parent ID to organize replies
+                let commentMap = Dictionary(grouping: comments) { $0.parentCommentId }
+                
+                // Get top-level comments (no parent)
+                let topLevelComments = commentMap[nil] ?? []
+                
+                // Create a list with all comments in the correct order
+                let orderedComments = topLevelComments.flatMap { parentComment in
+                    [parentComment] + (commentMap[parentComment.id] ?? [])
+                }
+                
+                DispatchQueue.main.async {
+                    // Update the discussion's comments
+                    if let index = self.discussions.firstIndex(where: { $0.id == discussion.id }) {
+                        self.discussions[index].comments = orderedComments
+                    }
                 }
             }
     }
@@ -303,42 +356,25 @@ class NotesViewModel: ObservableObject {
                     "authorId": currentUser.uid,
                     "authorName": authorName,
                     "timestamp": Date().timeIntervalSince1970,
-                    "likes": 0,
                     "parentCommentId": parentCommentId as Any,
                     "replyToAuthorName": replyToAuthorName as Any,
-                    "replyCount": 0,
                     "isReply": parentCommentId != nil
                 ]
                 
-                let batch = db.batch()
-                
-                // Add the comment
-                let commentRef = db.collection("discussions")
-                    .document(discussionId)
-                    .collection("comments")
-                    .document()
-                
-                batch.setData(commentData, forDocument: commentRef)
-                
-                // Update discussion comment count
                 let discussionRef = db.collection("discussions").document(discussionId)
-                batch.updateData([
+                let commentRef = try await discussionRef.collection("comments").addDocument(data: commentData)
+                
+                try await discussionRef.updateData([
                     "commentCount": FieldValue.increment(Int64(1))
-                ], forDocument: discussionRef)
+                ])
                 
-                // If this is a reply, update parent comment's reply count
-                if let parentId = parentCommentId {
-                    let parentCommentRef = db.collection("discussions")
-                        .document(discussionId)
-                        .collection("comments")
-                        .document(parentId)
-                    
-                    batch.updateData([
-                        "replyCount": FieldValue.increment(Int64(1))
-                    ], forDocument: parentCommentRef)
+                if let parentCommentId = parentCommentId {
+                    try await discussionRef.collection("comments")
+                        .document(parentCommentId)
+                        .updateData([
+                            "replyCount": FieldValue.increment(Int64(1))
+                        ])
                 }
-                
-                try await batch.commit()
             } catch {
                 print("Error adding comment: \(error)")
             }
@@ -346,42 +382,13 @@ class NotesViewModel: ObservableObject {
     }
     
     func deleteComment(discussionId: String, commentId: String) {
-        guard let currentUser = auth.currentUser else { return }
-        
         Task {
             do {
-                let commentRef = db.collection("discussions")
-                    .document(discussionId)
-                    .collection("comments")
-                    .document(commentId)
-                
-                let commentDoc = try await commentRef.getDocument()
-                guard commentDoc.get("authorId") as? String == currentUser.uid else { return }
-                
-                let batch = db.batch()
-                
-                // Delete the comment
-                batch.deleteDocument(commentRef)
-                
-                // Update discussion comment count
                 let discussionRef = db.collection("discussions").document(discussionId)
-                batch.updateData([
+                try await discussionRef.collection("comments").document(commentId).delete()
+                try await discussionRef.updateData([
                     "commentCount": FieldValue.increment(Int64(-1))
-                ], forDocument: discussionRef)
-                
-                // If this was a reply, update parent comment's reply count
-                if let parentId = commentDoc.get("parentCommentId") as? String {
-                    let parentRef = db.collection("discussions")
-                        .document(discussionId)
-                        .collection("comments")
-                        .document(parentId)
-                    
-                    batch.updateData([
-                        "replyCount": FieldValue.increment(Int64(-1))
-                    ], forDocument: parentRef)
-                }
-                
-                try await batch.commit()
+                ])
             } catch {
                 print("Error deleting comment: \(error)")
             }

@@ -10,7 +10,7 @@ struct Discussion: Identifiable {
     let likes: Int
     let commentCount: Int
     let tags: [String]
-    let comments: [Comment]
+    var comments: [Comment]
     let likedByUsers: Set<String>
     
     init(

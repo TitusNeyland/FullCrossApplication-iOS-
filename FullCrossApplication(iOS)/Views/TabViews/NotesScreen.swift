@@ -276,51 +276,60 @@ struct DiscussionCard: View {
     let discussion: Discussion
     let viewModel: NotesViewModel
     @Environment(\.colorScheme) var colorScheme
+    @State private var showDiscussionDetail = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Title and Author
-            VStack(alignment: .leading, spacing: 4) {
-                Text(discussion.title)
-                    .font(.headline)
+        Button(action: {
+            showDiscussionDetail = true
+        }) {
+            VStack(alignment: .leading, spacing: 12) {
+                // Title and Author
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(discussion.title)
+                        .font(.headline)
+                    
+                    Text("Posted by \(discussion.authorName)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 
-                Text("Posted by \(discussion.authorName)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            // Content
-            Text(discussion.content)
-                .font(.body)
-                .lineLimit(3)
-            
-            // Interaction Stats
-            HStack(spacing: 16) {
-                Button(action: {
-                    viewModel.likeDiscussion(discussion.id)
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: discussion.likedByUsers.contains(Auth.auth().currentUser?.uid ?? "") ? "heart.fill" : "heart")
-                        Text("\(discussion.likes)")
+                // Content
+                Text(discussion.content)
+                    .font(.body)
+                    .lineLimit(3)
+                
+                // Interaction Stats
+                HStack(spacing: 16) {
+                    Button(action: {
+                        viewModel.likeDiscussion(discussion.id)
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: discussion.likedByUsers.contains(Auth.auth().currentUser?.uid ?? "") ? "heart.fill" : "heart")
+                            Text("\(discussion.likes)")
+                        }
                     }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "bubble.right")
+                        Text("\(discussion.commentCount)")
+                    }
+                    
+                    Spacer()
+                    
+                    Text(Date(timeIntervalSince1970: discussion.timestamp), style: .relative)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
-                
-                HStack(spacing: 4) {
-                    Image(systemName: "bubble.right")
-                    Text("\(discussion.commentCount)")
-                }
-                
-                Spacer()
-                
-                Text(Date(timeIntervalSince1970: discussion.timestamp), style: .relative)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
+            .padding()
+            .background(colorScheme == .dark ? Color(.systemGray6) : .white)
+            .cornerRadius(12)
+            .shadow(radius: 2)
         }
-        .padding()
-        .background(colorScheme == .dark ? Color(.systemGray6) : .white)
-        .cornerRadius(12)
-        .shadow(radius: 2)
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showDiscussionDetail) {
+            DiscussionDetailView(discussion: discussion, viewModel: viewModel)
+        }
     }
 }
 
