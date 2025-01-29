@@ -80,45 +80,6 @@ struct WatchScreen: View {
                 }
                 .padding()
             }
-            
-            // Navigation Bar
-            HStack {
-                Spacer()
-                
-                Button(action: { selectedTab = .watch }) {
-                    VStack {
-                        Image(systemName: "play.circle.fill")
-                            .font(.title2)
-                        Text("Watch")
-                            .font(.caption)
-                    }
-                }
-                .foregroundColor(selectedTab == .watch ? .accentColor : .secondary)
-                
-                Spacer()
-                
-                Button(action: { selectedTab = .friends }) {
-                    VStack {
-                        ZStack {
-                            Image(systemName: "person.2")
-                                .font(.title2)
-                            if !contactsViewModel.pendingFriendRequests.isEmpty {
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: 8, y: -8)
-                            }
-                        }
-                        Text("Friends")
-                            .font(.caption)
-                    }
-                }
-                .foregroundColor(selectedTab == .friends ? .accentColor : .secondary)
-                
-                Spacer()
-            }
-            .padding(.vertical, 8)
-            .background(Color(.systemBackground))
         }
         .sheet(isPresented: $showSocialDialog) {
             SocialConnectionDialog(
