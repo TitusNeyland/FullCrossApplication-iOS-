@@ -39,13 +39,19 @@ struct MainScreen: View {
             HelpAndFaqScreen()
         }
         .sheet(isPresented: $showChangePassword) {
-            Text("Change Password") // Replace with actual ChangePasswordScreen
+            ChangePasswordScreen(onNavigateBack: {
+                showChangePassword = false
+            })
         }
         .sheet(isPresented: $showEditProfile) {
-            Text("Edit Profile") // Replace with actual EditProfileScreen
+            EditProfileScreen(onNavigateBack: {
+                showEditProfile = false
+            })
         }
         .sheet(isPresented: $showFriendsList) {
-            Text("Friends") // Replace with actual FriendsScreen
+            FriendsScreen(onNavigateBack: {
+                showFriendsList = false
+            })
         }
         .preferredColorScheme(themeViewModel.isDarkMode ? .dark : .light)
     }
@@ -71,6 +77,7 @@ struct MainScreen: View {
                     onNavigateToEditProfile: { showEditProfile = true },
                     onNavigateToFriends: { showFriendsList = true }
                 )
+                .navigationBarTitleDisplayMode(.inline)
             case .admin:
                 AdminScreen()
             }

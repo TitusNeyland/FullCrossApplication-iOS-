@@ -18,15 +18,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 @main
 struct FullCrossApplication_iOS_App: App {
-    init() {
-        // Configure Firebase when ready
-        @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-        // Configure other services here
-    }
+    @StateObject private var themeViewModel = ThemeViewModel()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.themeViewModel, themeViewModel)
+                .preferredColorScheme(themeViewModel.isDarkMode ? .dark : .light)
         }
     }
 }

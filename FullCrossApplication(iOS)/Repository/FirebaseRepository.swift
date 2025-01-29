@@ -17,6 +17,9 @@ class FirebaseRepository {
         return FCUser(
             id: firebaseUser.uid,
             email: firebaseUser.email ?? "",
+            firstName: userDoc.get("firstName") as? String ?? "",
+            lastName: userDoc.get("lastName") as? String ?? "",
+            phoneNumber: userDoc.get("phoneNumber") as? String ?? "",
             roles: Set(userDoc.get("roles") as? [String] ?? [])
         )
     }
@@ -28,6 +31,7 @@ class FirebaseRepository {
             "firstName": firstName,
             "lastName": lastName,
             "email": email,
+            "phoneNumber": "",
             "roles": roles,
             "createdAt": Timestamp()
         ]
@@ -39,6 +43,9 @@ class FirebaseRepository {
         return FCUser(
             id: authResult.user.uid,
             email: email,
+            firstName: firstName,
+            lastName: lastName,
+            phoneNumber: "",
             roles: Set(roles)
         )
     }
@@ -48,6 +55,9 @@ class FirebaseRepository {
         return try await getCurrentUser() ?? FCUser(
             id: authResult.user.uid,
             email: email,
+            firstName: "",
+            lastName: "",
+            phoneNumber: "",
             roles: []
         )
     }
