@@ -109,32 +109,45 @@ struct SocialConnectionDialog: View {
             DisclosureGroup(
                 isExpanded: $isSyncExpanded,
                 content: {
-                    if contactsViewModel.isLoading {
-                        ProgressView()
-                            .padding()
-                    } else if !contactsViewModel.contacts.isEmpty {
-                        ContactsList(contacts: contactsViewModel.contacts)
+                    VStack(spacing: 12) {
+                        if contactsViewModel.isLoading {
+                            ProgressView("Syncing contacts...")
+                                .padding()
+                        } else {
+                            if !contactsViewModel.contacts.isEmpty {
+                                ContactsList(
+                                    contacts: contactsViewModel.contacts,
+                                    contactsViewModel: contactsViewModel
+                                )
+                            }
+                            
+                            Button(action: {
+                                Task {
+                                    await contactsViewModel.syncContacts()
+                                }
+                            }) {
+                                Label(
+                                    contactsViewModel.contacts.isEmpty ? "Sync Contacts" : "Refresh Contacts",
+                                    systemImage: "arrow.triangle.2.circlepath"
+                                )
+                            }
+                            .buttonStyle(.bordered)
+                            .padding(.top)
+                        }
                     }
                 },
                 label: {
-                    HStack {
-                        Label("Sync Contacts", systemImage: "person.crop.circle.badge.plus")
-                            .font(.headline)
-                        
-                        Spacer()
-                        
-                        if contactsViewModel.contacts.isEmpty {
-                            Button("Sync") {
-                                Task {
-                                    await contactsViewModel.syncContacts()
-                                    isSyncExpanded = true
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                    }
+                    Label("Sync Contacts", systemImage: "person.crop.circle.badge.plus")
+                        .font(.headline)
                 }
             )
+            
+            if let error = contactsViewModel.error {
+                Text(error)
+                    .foregroundColor(.red)
+                    .font(.caption)
+                    .padding(.top, 4)
+            }
         }
     }
     
@@ -227,6 +240,7 @@ struct SearchResultRow: View {
 
 struct ContactsList: View {
     let contacts: [Contact]
+    let contactsViewModel: ContactsViewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -237,30 +251,43 @@ struct ContactsList: View {
             ForEach(contacts) { contact in
                 HStack {
                     VStack(alignment: .leading) {
-                        HStack {
-                            Text(contact.name)
-                            if contact.isAppUser {
-                                Circle()
-                                    .fill(Color.green)
-                                    .frame(width: 8, height: 8)
-                            }
+                        Text(contact.name)
+                            .font(.headline)
+                        
+                        if let phone = contact.phoneNumber {
+                            Text(phone)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
                         }
-                        Text(contact.phoneNumber ?? "")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
                     }
                     
                     Spacer()
                     
-                    if !contact.isAppUser {
+                    if contact.isAppUser {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 8, height: 8)
+                    } else {
                         Button("Invite") {
-                            // Handle invite action
+                            shareInvite(contact: contact)
                         }
                         .buttonStyle(.bordered)
                     }
                 }
                 .padding(.horizontal)
+                .padding(.vertical, 4)
             }
+        }
+    }
+    
+    private func shareInvite(contact: Contact) {
+        guard let phoneNumber = contact.phoneNumber else { return }
+        
+        let message = "Hey! Join me on this amazing app: [Your App Link]"
+        let smsUrl = URL(string: "sms:\(phoneNumber)&body=\(message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")")
+        
+        if let url = smsUrl {
+            UIApplication.shared.open(url)
         }
     }
 }

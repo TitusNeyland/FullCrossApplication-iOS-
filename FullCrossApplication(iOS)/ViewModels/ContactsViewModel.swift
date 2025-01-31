@@ -42,8 +42,44 @@ class ContactsViewModel: ObservableObject {
         error = nil
         
         do {
-            contacts = try await contactsRepository.getContacts()
+            print("📱 Starting contacts sync...")
+            let deviceContacts = try await contactsRepository.getContacts()
+            
+            guard let currentUserId = Auth.auth().currentUser?.uid else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not logged in"])
+            }
+            
+            // Get all app users
+            let usersSnapshot = try await db.collection("users").getDocuments()
+            let appUsers = usersSnapshot.documents.map { doc -> (id: String, phone: String) in
+                let phone = (doc["phoneNumber"] as? String ?? "").replacingOccurrences(of: "[^0-9]", with: "", options: .regularExpression)
+                return (doc.documentID, phone)
+            }
+            
+            print("👥 Found \(appUsers.count) app users")
+            
+            // Match contacts with app users
+            var matchedContacts: [Contact] = []
+            for contact in deviceContacts {
+                let cleanPhone = contact.phoneNumber?.replacingOccurrences(of: "[^0-9]", with: "", options: .regularExpression) ?? ""
+                if let matchedUser = appUsers.first(where: { $0.phone == cleanPhone }) {
+                    matchedContacts.append(Contact(
+                        id: contact.id,
+                        name: contact.name,
+                        phoneNumber: contact.phoneNumber,
+                        isAppUser: true,
+                        userId: matchedUser.id
+                    ))
+                } else {
+                    matchedContacts.append(contact)
+                }
+            }
+            
+            print("✅ Sync complete: Found \(matchedContacts.filter { $0.isAppUser }.count) matching contacts")
+            contacts = matchedContacts
+            
         } catch {
+            print("❌ Sync failed: \(error.localizedDescription)")
             self.error = "Failed to sync contacts: \(error.localizedDescription)"
         }
         

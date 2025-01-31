@@ -1,8 +1,9 @@
 import Foundation
 
 struct Contact: Identifiable {
-    let id = UUID()
+    let id: String
     let name: String
     let phoneNumber: String?
-    let isAppUser: Bool
+    var isAppUser: Bool
+    var userId: String?
 } 

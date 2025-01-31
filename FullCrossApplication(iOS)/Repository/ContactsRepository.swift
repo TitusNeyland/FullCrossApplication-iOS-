@@ -13,64 +13,35 @@ class ContactsRepositoryImpl: ContactsRepository {
     private let store = CNContactStore()
     
     func getContacts() async throws -> [Contact] {
-        // Request contacts access if not already granted
+        // Request permission
         let authStatus = CNContactStore.authorizationStatus(for: .contacts)
         if authStatus == .notDetermined {
-            _ = try await store.requestAccess(for: .contacts)
-        }
-        
-        guard authStatus == .authorized || authStatus == .notDetermined else {
-            throw NSError(domain: "ContactsRepository",
-                         code: -1,
-                         userInfo: [NSLocalizedDescriptionKey: "Contacts access denied"])
+            let granted = try await store.requestAccess(for: .contacts)
+            if !granted {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Contact access denied"])
+            }
+        } else if authStatus == .denied {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Contact access denied. Please enable in Settings."])
         }
         
         // Fetch contacts
-        let keysToFetch = [
-            CNContactGivenNameKey,
-            CNContactFamilyNameKey,
-            CNContactPhoneNumbersKey
-        ] as [CNKeyDescriptor]
+        let keys = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactPhoneNumbersKey]
+        let request = CNContactFetchRequest(keysToFetch: keys as [CNKeyDescriptor])
         
-        let containerId = store.defaultContainerIdentifier()
-        let predicate = CNContact.predicateForContactsInContainer(withIdentifier: containerId)
-        
-        let contacts = try store.unifiedContacts(matching: predicate, keysToFetch: keysToFetch)
-        var uniqueContacts: [Contact] = []
-        var seenPhoneNumbers = Set<String>()
-        
-        // Process contacts and remove duplicates
-        for contact in contacts {
-            guard let phoneNumber = contact.phoneNumbers.first?.value.stringValue else { continue }
-            
-            // Clean phone number format
-            let cleanNumber = phoneNumber.replacingOccurrences(of: "[^0-9+]", with: "", options: .regularExpression)
-            
-            // Skip if we've already seen this number
-            if seenPhoneNumbers.contains(cleanNumber) { continue }
-            seenPhoneNumbers.insert(cleanNumber)
-            
+        var contacts: [Contact] = []
+        try store.enumerateContacts(with: request) { contact, _ in
             let name = "\(contact.givenName) \(contact.familyName)".trimmingCharacters(in: .whitespaces)
-            if !name.isEmpty && !cleanNumber.isEmpty {
-                uniqueContacts.append(Contact(
+            if !name.isEmpty, let phoneNumber = contact.phoneNumbers.first?.value.stringValue {
+                contacts.append(Contact(
+                    id: UUID().uuidString,
                     name: name,
-                    phoneNumber: cleanNumber,
+                    phoneNumber: phoneNumber,
                     isAppUser: false
                 ))
             }
         }
         
-        // Update app user status
-        let appUsers = try await getAppUsers()
-        return uniqueContacts.map { contact in
-            if let phone = contact.phoneNumber,
-               appUsers.contains(phone.replacingOccurrences(of: "[^0-9]", with: "")) {
-                return Contact(name: contact.name,
-                             phoneNumber: contact.phoneNumber,
-                             isAppUser: true)
-            }
-            return contact
-        }
+        return contacts.sorted { $0.name < $1.name }
     }
     
     func getAppUsers() async throws -> Set<String> {
