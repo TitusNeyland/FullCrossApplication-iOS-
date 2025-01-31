@@ -201,25 +201,30 @@ class ContactsViewModel: ObservableObject {
     func sendFriendRequest(toUserId: String, toUserName: String) async {
         do {
             guard let currentUserId = Auth.auth().currentUser?.uid else {
+                print("❌ Friend Request Failed: User not logged in")
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not logged in"])
             }
             
-            let timestamp = Date()
+            // Prevent sending friend request to self
+            if currentUserId == toUserId {
+                print("❌ Friend Request Failed: Cannot send request to self")
+                self.error = "You cannot send a friend request to yourself"
+                return
+            }
+            
+            print("📤 Initiating friend request to: \(toUserName)")
+            let timestamp = Timestamp(date: Date())
             let batch = db.batch()
             
-            // Add to current user's friendships
-            let currentUserRef = db.collection("users")
+            // Get current user's name for the notification
+            let currentUserDoc = try await db.collection("users")
                 .document(currentUserId)
-                .collection("friendships")
-                .document(toUserId)
+                .getDocument()
             
-            batch.setData([
-                "status": "pending",
-                "createdAt": timestamp,
-                "updatedAt": timestamp
-            ], forDocument: currentUserRef)
+            let currentUserName = "\(currentUserDoc.get("firstName") as? String ?? "") \(currentUserDoc.get("lastName") as? String ?? "")"
+            print("👤 Sender: \(currentUserName)")
             
-            // Add to recipient's friendships
+            // Create friendship document for recipient
             let recipientRef = db.collection("users")
                 .document(toUserId)
                 .collection("friendships")
@@ -227,9 +232,25 @@ class ContactsViewModel: ObservableObject {
             
             batch.setData([
                 "status": "pending",
-                "createdAt": timestamp,
-                "updatedAt": timestamp
+                "timestamp": timestamp,
+                "type": "received",
+                "fromUserName": currentUserName
             ], forDocument: recipientRef)
+            print("📝 Created recipient friendship document")
+            
+            // Create friendship document for sender
+            let senderRef = db.collection("users")
+                .document(currentUserId)
+                .collection("friendships")
+                .document(toUserId)
+            
+            batch.setData([
+                "status": "pending",
+                "timestamp": timestamp,
+                "type": "sent",
+                "toUserName": toUserName
+            ], forDocument: senderRef)
+            print("📝 Created sender friendship document")
             
             // Create notification for recipient
             let notificationRef = db.collection("users")
@@ -237,28 +258,24 @@ class ContactsViewModel: ObservableObject {
                 .collection("notifications")
                 .document()
             
-            let currentUserDoc = try await db.collection("users")
-                .document(currentUserId)
-                .getDocument()
-            
-            let currentUserName = "\(currentUserDoc.get("firstName") as? String ?? "") \(currentUserDoc.get("lastName") as? String ?? "")"
-            
             batch.setData([
-                "type": "friendRequest",
+                "type": "FRIEND_REQUEST",
                 "fromUserId": currentUserId,
                 "fromUserName": currentUserName,
-                "read": false,
-                "createdAt": timestamp
+                "timestamp": timestamp,
+                "read": false
             ], forDocument: notificationRef)
+            print("🔔 Created notification document")
             
             try await batch.commit()
+            print("✅ Friend request successfully sent to \(toUserName)")
             
-            // Refresh search results to update UI
+            // Refresh UI
             if !searchQuery.isEmpty {
                 await searchUsers(searchQuery)
             }
-            
         } catch {
+            print("❌ Friend Request Failed: \(error.localizedDescription)")
             self.error = "Failed to send friend request: \(error.localizedDescription)"
         }
     }
@@ -313,6 +330,7 @@ class ContactsViewModel: ObservableObject {
     private func setupPendingFriendRequestsListener() {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return }
         
+        // Listen for pending friend requests
         listenerRegistration = db.collection("users")
             .document(currentUserId)
             .collection("friendships")

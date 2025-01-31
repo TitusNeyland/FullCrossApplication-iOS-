@@ -195,7 +195,10 @@ struct SearchResultRow: View {
             case .none:
                 Button("Add Friend") {
                     Task {
-                        await contactsViewModel.sendFriendRequest(toUserId: user.id, toUserName: "\(user.firstName) \(user.lastName)")
+                        await contactsViewModel.sendFriendRequest(
+                            toUserId: user.id,
+                            toUserName: "\(user.firstName) \(user.lastName)"
+                        )
                     }
                 }
                 .buttonStyle(.bordered)
