@@ -182,13 +182,11 @@ struct SearchResultRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text(user.fullName)
+                Text("\(user.firstName) \(user.lastName)")
                     .font(.headline)
-                if !user.phoneNumber.isEmpty {
-                    Text(user.phoneNumber)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+                Text(user.phoneNumber)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
             }
             
             Spacer()
@@ -197,10 +195,11 @@ struct SearchResultRow: View {
             case .none:
                 Button("Add Friend") {
                     Task {
-                        await contactsViewModel.sendFriendRequest(toUserId: user.id, toUserName: user.fullName)
+                        await contactsViewModel.sendFriendRequest(toUserId: user.id, toUserName: "\(user.firstName) \(user.lastName)")
                     }
                 }
-                .foregroundColor(.green)
+                .buttonStyle(.bordered)
+                .tint(.green)
                 
             case .pending:
                 Text("Pending")
@@ -213,9 +212,10 @@ struct SearchResultRow: View {
             case .declined:
                 Button("Try Again") {
                     Task {
-                        await contactsViewModel.sendFriendRequest(toUserId: user.id, toUserName: user.fullName)
+                        await contactsViewModel.sendFriendRequest(toUserId: user.id, toUserName: "\(user.firstName) \(user.lastName)")
                     }
                 }
+                .buttonStyle(.bordered)
             }
         }
         .padding()

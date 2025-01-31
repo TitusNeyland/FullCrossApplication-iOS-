@@ -200,34 +200,36 @@ class ContactsViewModel: ObservableObject {
     
     func sendFriendRequest(toUserId: String, toUserName: String) async {
         do {
-            guard let currentUser = Auth.auth().currentUser else {
+            guard let currentUserId = Auth.auth().currentUser?.uid else {
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not logged in"])
             }
             
-            guard currentUser.uid != toUserId else {
-                error = "You cannot send a friend request to yourself"
-                return
-            }
-            
-            let currentUserDoc = try await db.collection("users")
-                .document(currentUser.uid)
-                .getDocument()
-            
-            let currentUserName = "\(currentUserDoc["firstName"] as? String ?? "") \(currentUserDoc["lastName"] as? String ?? "")"
             let timestamp = Date()
-            
             let batch = db.batch()
             
-            // Create friendship document for recipient
-            let recipientFriendshipRef = db.collection("users")
-                .document(toUserId)
+            // Add to current user's friendships
+            let currentUserRef = db.collection("users")
+                .document(currentUserId)
                 .collection("friendships")
-                .document(currentUser.uid)
+                .document(toUserId)
             
             batch.setData([
                 "status": "pending",
-                "timestamp": timestamp
-            ], forDocument: recipientFriendshipRef)
+                "createdAt": timestamp,
+                "updatedAt": timestamp
+            ], forDocument: currentUserRef)
+            
+            // Add to recipient's friendships
+            let recipientRef = db.collection("users")
+                .document(toUserId)
+                .collection("friendships")
+                .document(currentUserId)
+            
+            batch.setData([
+                "status": "pending",
+                "createdAt": timestamp,
+                "updatedAt": timestamp
+            ], forDocument: recipientRef)
             
             // Create notification for recipient
             let notificationRef = db.collection("users")
@@ -235,15 +237,26 @@ class ContactsViewModel: ObservableObject {
                 .collection("notifications")
                 .document()
             
+            let currentUserDoc = try await db.collection("users")
+                .document(currentUserId)
+                .getDocument()
+            
+            let currentUserName = "\(currentUserDoc.get("firstName") as? String ?? "") \(currentUserDoc.get("lastName") as? String ?? "")"
+            
             batch.setData([
-                "type": NotificationType.friendRequest.rawValue,
-                "fromUserId": currentUser.uid,
+                "type": "friendRequest",
+                "fromUserId": currentUserId,
                 "fromUserName": currentUserName,
-                "timestamp": timestamp,
-                "read": false
+                "read": false,
+                "createdAt": timestamp
             ], forDocument: notificationRef)
             
             try await batch.commit()
+            
+            // Refresh search results to update UI
+            if !searchQuery.isEmpty {
+                await searchUsers(searchQuery)
+            }
             
         } catch {
             self.error = "Failed to send friend request: \(error.localizedDescription)"
