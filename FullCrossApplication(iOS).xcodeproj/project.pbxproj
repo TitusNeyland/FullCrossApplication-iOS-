@@ -40,9 +40,22 @@
 		1088B79D2D4708FA0093B0A9 /* FullCrossApplication(iOS)UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "FullCrossApplication(iOS)UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		101F8B952D4D8E7F003B1E9F /* Exceptions for "FullCrossApplication(iOS)" folder in "FullCrossApplication(iOS)" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"FullCrossApplication-iOS--Info.plist",
+			);
+			target = 1088B7822D4708F90093B0A9 /* FullCrossApplication(iOS) */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1088B7852D4708F90093B0A9 /* FullCrossApplication(iOS) */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				101F8B952D4D8E7F003B1E9F /* Exceptions for "FullCrossApplication(iOS)" folder in "FullCrossApplication(iOS)" target */,
+			);
 			path = "FullCrossApplication(iOS)";
 			sourceTree = "<group>";
 		};
@@ -429,6 +442,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"FullCrossApplication(iOS)/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "FullCrossApplication-iOS--Info.plist";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "We need access to the calendar to set reminders for upcoming events and services.";
 				INFOPLIST_KEY_NSContactsUsageDescription = "We need access to your contacts to help you find and connect with your friends who are also using the app.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -459,6 +473,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"FullCrossApplication(iOS)/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "FullCrossApplication-iOS--Info.plist";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "We need access to the calendar to set reminders for upcoming events and services.";
 				INFOPLIST_KEY_NSContactsUsageDescription = "We need access to your contacts to help you find and connect with your friends who are also using the app.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
