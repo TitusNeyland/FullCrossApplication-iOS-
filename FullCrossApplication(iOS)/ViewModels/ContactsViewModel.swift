@@ -2,23 +2,30 @@ import Foundation
 import Contacts
 import FirebaseAuth
 import FirebaseFirestore
+import Combine
 
 @MainActor
 class ContactsViewModel: ObservableObject {
+    // MARK: - Published Properties
     @Published private(set) var contacts: [Contact] = []
     @Published private(set) var isLoading = false
     @Published private(set) var error: String?
+    @Published private(set) var searchQuery = ""
     @Published private(set) var searchResults: [UserProfile] = []
     @Published private(set) var isSearching = false
     @Published private(set) var friends: [UserProfile] = []
     @Published private(set) var pendingFriendRequests: [UserProfile] = []
     
+    // MARK: - Private Properties
     private let authViewModel: AuthViewModel
+    private let contactsRepository: ContactsRepository
     private let db = Firestore.firestore()
     private var listenerRegistration: ListenerRegistration?
     
-    init(authViewModel: AuthViewModel) {
+    // MARK: - Initialization
+    init(authViewModel: AuthViewModel, contactsRepository: ContactsRepository = ContactsRepositoryImpl()) {
         self.authViewModel = authViewModel
+        self.contactsRepository = contactsRepository
         Task {
             await fetchFriends()
             setupPendingFriendRequestsListener()
@@ -29,131 +36,13 @@ class ContactsViewModel: ObservableObject {
         listenerRegistration?.remove()
     }
     
-    private func fetchFriends() async {
-        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
-        
-        do {
-            let friendships = try await db.collection("users")
-                .document(currentUserId)
-                .collection("friendships")
-                .whereField("status", isEqualTo: "accepted")
-                .getDocuments()
-            
-            let friendIds = friendships.documents.map { $0.documentID }
-            
-            let friendProfiles = try await withThrowingTaskGroup(of: UserProfile?.self) { group in
-                for friendId in friendIds {
-                    group.addTask {
-                        let doc = try await self.db.collection("users")
-                            .document(friendId)
-                            .getDocument()
-                        
-                        guard doc.exists else { return nil }
-                        
-                        return UserProfile(
-                            id: doc.documentID,
-                            firstName: doc.get("firstName") as? String ?? "",
-                            lastName: doc.get("lastName") as? String ?? "",
-                            phoneNumber: doc.get("phoneNumber") as? String ?? "",
-                            friendshipStatus: .accepted
-                        )
-                    }
-                }
-                
-                var profiles: [UserProfile] = []
-                for try await profile in group {
-                    if let profile = profile {
-                        profiles.append(profile)
-                    }
-                }
-                return profiles
-            }
-            
-            self.friends = friendProfiles
-            
-        } catch {
-            self.error = "Failed to fetch friends: \(error.localizedDescription)"
-        }
-    }
-    
-    private func setupPendingFriendRequestsListener() {
-        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
-        
-        listenerRegistration = db.collection("users")
-            .document(currentUserId)
-            .collection("friendships")
-            .whereField("status", isEqualTo: "pending")
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    self.error = "Error fetching friend requests: \(error.localizedDescription)"
-                    return
-                }
-                
-                Task {
-                    do {
-                        let pendingRequests = try await withThrowingTaskGroup(of: UserProfile?.self) { group in
-                            for doc in snapshot?.documents ?? [] {
-                                let friendId = doc.documentID
-                                group.addTask {
-                                    let friendDoc = try await self.db.collection("users")
-                                        .document(friendId)
-                                        .getDocument()
-                                    
-                                    guard friendDoc.exists else { return nil }
-                                    
-                                    return UserProfile(
-                                        id: friendDoc.documentID,
-                                        firstName: friendDoc.get("firstName") as? String ?? "",
-                                        lastName: friendDoc.get("lastName") as? String ?? "",
-                                        phoneNumber: friendDoc.get("phoneNumber") as? String ?? "",
-                                        friendshipStatus: .pending
-                                    )
-                                }
-                            }
-                            
-                            var profiles: [UserProfile] = []
-                            for try await profile in group {
-                                if let profile = profile {
-                                    profiles.append(profile)
-                                }
-                            }
-                            return profiles
-                        }
-                        
-                        self.pendingFriendRequests = pendingRequests
-                    } catch {
-                        self.error = "Failed to process friend requests: \(error.localizedDescription)"
-                    }
-                }
-            }
-    }
-    
+    // MARK: - Public Methods
     func syncContacts() async {
         isLoading = true
         error = nil
         
-        let store = CNContactStore()
-        let keysToFetch = [
-            CNContactGivenNameKey,
-            CNContactFamilyNameKey,
-            CNContactPhoneNumbersKey
-        ] as [CNKeyDescriptor]
-        
         do {
-            let containerId = store.defaultContainerIdentifier()
-            let predicate = CNContact.predicateForContactsInContainer(withIdentifier: containerId)
-            
-            let cnContacts = try store.unifiedContacts(matching: predicate, keysToFetch: keysToFetch)
-            
-            contacts = cnContacts.map { cnContact in
-                Contact(
-                    name: "\(cnContact.givenName) \(cnContact.familyName)".trimmingCharacters(in: .whitespaces),
-                    phoneNumber: cnContact.phoneNumbers.first?.value.stringValue,
-                    isAppUser: false  // TODO: Check against Firebase
-                )
-            }
+            contacts = try await contactsRepository.getContacts()
         } catch {
             self.error = "Failed to sync contacts: \(error.localizedDescription)"
         }
@@ -167,6 +56,7 @@ class ContactsViewModel: ObservableObject {
             return
         }
         
+        searchQuery = query
         isSearching = true
         
         do {
@@ -175,7 +65,6 @@ class ContactsViewModel: ObservableObject {
             }
             
             let cleanQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            
             let snapshot = try await db.collection("users").getDocuments()
             
             searchResults = snapshot.documents.compactMap { doc in
@@ -190,7 +79,8 @@ class ContactsViewModel: ObservableObject {
                         id: doc.documentID,
                         firstName: doc["firstName"] as? String ?? "",
                         lastName: doc["lastName"] as? String ?? "",
-                        phoneNumber: phone
+                        phoneNumber: phone,
+                        friendshipStatus: .none
                     )
                 }
                 return nil
@@ -204,7 +94,39 @@ class ContactsViewModel: ObservableObject {
     }
     
     func clearSearch() {
+        searchQuery = ""
         searchResults = []
+    }
+    
+    func removeFriend(_ friendId: String) async {
+        do {
+            guard let currentUser = Auth.auth().currentUser else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not logged in"])
+            }
+            
+            let batch = db.batch()
+            
+            // Delete friendship documents for both users
+            let currentUserFriendshipRef = db.collection("users")
+                .document(currentUser.uid)
+                .collection("friendships")
+                .document(friendId)
+            
+            let otherUserFriendshipRef = db.collection("users")
+                .document(friendId)
+                .collection("friendships")
+                .document(currentUser.uid)
+            
+            batch.deleteDocument(currentUserFriendshipRef)
+            batch.deleteDocument(otherUserFriendshipRef)
+            
+            try await batch.commit()
+            await fetchFriends()
+            await authViewModel.fetchFriendsCount()
+            
+        } catch {
+            self.error = "Failed to remove friend: \(error.localizedDescription)"
+        }
     }
     
     func acceptFriendRequest(_ fromUserId: String) async {
@@ -328,5 +250,104 @@ class ContactsViewModel: ObservableObject {
         }
     }
     
-    // ... Continued in next message due to length ...
+    // MARK: - Private Methods
+    private func fetchFriends() async {
+        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
+        
+        do {
+            let friendships = try await db.collection("users")
+                .document(currentUserId)
+                .collection("friendships")
+                .whereField("status", isEqualTo: "accepted")
+                .getDocuments()
+            
+            let friendProfiles = try await withThrowingTaskGroup(of: UserProfile?.self) { group in
+                for doc in friendships.documents {
+                    let friendId = doc.documentID
+                    group.addTask {
+                        let friendDoc = try await self.db.collection("users")
+                            .document(friendId)
+                            .getDocument()
+                        
+                        guard friendDoc.exists else { return nil }
+                        
+                        return UserProfile(
+                            id: friendDoc.documentID,
+                            firstName: friendDoc.get("firstName") as? String ?? "",
+                            lastName: friendDoc.get("lastName") as? String ?? "",
+                            phoneNumber: friendDoc.get("phoneNumber") as? String ?? "",
+                            friendshipStatus: .accepted
+                        )
+                    }
+                }
+                
+                var profiles: [UserProfile] = []
+                for try await profile in group {
+                    if let profile = profile {
+                        profiles.append(profile)
+                    }
+                }
+                return profiles
+            }
+            
+            self.friends = friendProfiles
+            
+        } catch {
+            self.error = "Failed to fetch friends: \(error.localizedDescription)"
+        }
+    }
+    
+    private func setupPendingFriendRequestsListener() {
+        guard let currentUserId = Auth.auth().currentUser?.uid else { return }
+        
+        listenerRegistration = db.collection("users")
+            .document(currentUserId)
+            .collection("friendships")
+            .whereField("status", isEqualTo: "pending")
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    self.error = "Error fetching friend requests: \(error.localizedDescription)"
+                    return
+                }
+                
+                Task {
+                    do {
+                        let pendingRequests = try await withThrowingTaskGroup(of: UserProfile?.self) { group in
+                            for doc in snapshot?.documents ?? [] {
+                                let friendId = doc.documentID
+                                group.addTask {
+                                    let friendDoc = try await self.db.collection("users")
+                                        .document(friendId)
+                                        .getDocument()
+                                    
+                                    guard friendDoc.exists else { return nil }
+                                    
+                                    return UserProfile(
+                                        id: friendDoc.documentID,
+                                        firstName: friendDoc.get("firstName") as? String ?? "",
+                                        lastName: friendDoc.get("lastName") as? String ?? "",
+                                        phoneNumber: friendDoc.get("phoneNumber") as? String ?? "",
+                                        friendshipStatus: .pending
+                                    )
+                                }
+                            }
+                            
+                            var profiles: [UserProfile] = []
+                            for try await profile in group {
+                                if let profile = profile {
+                                    profiles.append(profile)
+                                }
+                            }
+                            return profiles
+                        }
+                        
+                        self.pendingFriendRequests = pendingRequests
+                    } catch {
+                        self.error = "Failed to process friend requests: \(error.localizedDescription)"
+                    }
+                }
+            }
+    }
 } 
