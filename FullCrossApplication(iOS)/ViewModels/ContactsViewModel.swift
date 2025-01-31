@@ -162,6 +162,9 @@ class ContactsViewModel: ObservableObject {
             try await batch.commit()
             await fetchFriends()
             
+            // Add this line to update friends count
+            await authViewModel.fetchFriendsCount()
+            
         } catch {
             self.error = "Failed to accept friend request: \(error.localizedDescription)"
         }

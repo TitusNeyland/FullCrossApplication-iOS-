@@ -269,6 +269,7 @@ struct FriendRequestCard: View {
     let request: Notification
     let contactsViewModel: ContactsViewModel
     let notificationsViewModel: NotificationsViewModel
+    @State private var isLoading = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -280,23 +281,32 @@ struct FriendRequestCard: View {
                 .foregroundColor(.secondary)
             
             HStack {
-                Button("Accept") {
-                    Task {
-                        await contactsViewModel.acceptFriendRequest(request.fromUserId)
-                        await notificationsViewModel.markAsRead(request.id)
+                if isLoading {
+                    ProgressView()
+                        .padding(.horizontal)
+                } else {
+                    Button("Accept") {
+                        Task {
+                            isLoading = true
+                            await contactsViewModel.acceptFriendRequest(request.fromUserId)
+                            await notificationsViewModel.markAsRead(request.id)
+                            isLoading = false
+                        }
                     }
-                }
-                .buttonStyle(.bordered)
-                .tint(.green)
-                
-                Button("Decline") {
-                    Task {
-                        await contactsViewModel.declineFriendRequest(request.fromUserId)
-                        await notificationsViewModel.markAsRead(request.id)
+                    .buttonStyle(.bordered)
+                    .tint(.green)
+                    
+                    Button("Decline") {
+                        Task {
+                            isLoading = true
+                            await contactsViewModel.declineFriendRequest(request.fromUserId)
+                            await notificationsViewModel.markAsRead(request.id)
+                            isLoading = false
+                        }
                     }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
                 }
-                .buttonStyle(.bordered)
-                .tint(.red)
             }
         }
         .padding()
