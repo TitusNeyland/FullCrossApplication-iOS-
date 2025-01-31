@@ -4,12 +4,15 @@ import FirebaseFirestore
 
 @MainActor
 class FriendsViewModel: ObservableObject {
+    // MARK: - Published Properties
     @Published private(set) var friends: [UserProfile] = []
     @Published private(set) var isLoading = false
     @Published private(set) var error: String?
     
+    // MARK: - Private Properties
     private let db = Firestore.firestore()
     
+    // MARK: - Public Methods
     func loadFriends() {
         Task {
             isLoading = true

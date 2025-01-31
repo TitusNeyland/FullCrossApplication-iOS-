@@ -117,6 +117,9 @@ struct AccountScreen: View {
         } message: {
             Text("To receive notifications, please enable them in your device settings.")
         }
+        .onAppear {
+            authViewModel.fetchFriendsCount()
+        }
     }
     
     // MARK: - Private Views
