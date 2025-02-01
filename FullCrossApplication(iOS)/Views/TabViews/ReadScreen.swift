@@ -100,8 +100,8 @@ struct CustomNavigationBar: View {
     @ObservedObject var viewModel: BibleViewModel
     
     var title: String {
-        if let chapter = viewModel.currentChapter {
-            return "\(viewModel.selectedBook?.name ?? "") \(chapter.number)"
+        if viewModel.currentChapter != nil {
+            return "" // Return empty string when viewing a chapter
         } else if viewModel.selectedBook != nil {
             return "Select Chapter"
         } else if viewModel.selectedBible != nil {
@@ -268,14 +268,14 @@ struct ChapterView: View {
                 } label: {
                     Image(systemName: "chevron.left.circle.fill")
                         .imageScale(.large)
-                        .foregroundColor(.primary)
+                        .foregroundColor(viewModel.currentChapterIndex == 0 ? .gray : .primary)
                 }
-                .disabled(viewModel.currentChapterNumber == 1)
+                .disabled(viewModel.currentChapterIndex == 0)
                 
                 Spacer()
                 
                 if let book = viewModel.selectedBook {
-                    Text("\(book.name) Chapter \(chapter.number)")
+                    Text("\(book.name) \(chapter.number)")
                         .font(.headline)
                 }
                 
@@ -290,8 +290,9 @@ struct ChapterView: View {
                 } label: {
                     Image(systemName: "chevron.right.circle.fill")
                         .imageScale(.large)
-                        .foregroundColor(.primary)
+                        .foregroundColor(viewModel.currentChapterIndex == viewModel.totalChapters - 1 ? .gray : .primary)
                 }
+                .disabled(viewModel.currentChapterIndex == viewModel.totalChapters - 1)
             }
             .padding(.horizontal)
             

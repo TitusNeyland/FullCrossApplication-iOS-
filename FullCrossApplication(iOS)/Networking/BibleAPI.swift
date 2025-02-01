@@ -65,7 +65,7 @@ class BibleAPIImpl: BibleAPI {
             
             // Print the response data for debugging
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("Response JSON: \(jsonString)")
+                //print("Response JSON: \(jsonString)")
             }
             
             return try decoder.decode(T.self, from: data)

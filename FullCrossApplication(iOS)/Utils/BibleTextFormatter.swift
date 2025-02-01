@@ -35,7 +35,7 @@ enum BibleTextFormatter {
                 // Clean up verse text
                 verseText = cleanVerseText(verseText)
                 
-                print("Parsed verse \(verseNumber): \(verseText)") // Debug print
+                //print("Parsed verse \(verseNumber): \(verseText)") // Debug print
                 
                 formattedVerses.append(FormattedVerse(
                     text: verseText,
