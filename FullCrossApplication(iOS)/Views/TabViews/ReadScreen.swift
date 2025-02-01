@@ -100,8 +100,8 @@ struct CustomNavigationBar: View {
     @ObservedObject var viewModel: BibleViewModel
     
     var title: String {
-        if let chapter = viewModel.currentChapter {
-            return "\(viewModel.selectedBook?.name ?? "") \(chapter.number)"
+        if viewModel.currentChapter != nil {
+            return "" // Return empty string when viewing a chapter
         } else if viewModel.selectedBook != nil {
             return "Select Chapter"
         } else if viewModel.selectedBible != nil {
