@@ -20,6 +20,7 @@ class NotesViewModel: ObservableObject {
     init(noteRepository: NoteRepository = FirestoreNoteRepository()) {
         self.noteRepository = noteRepository
         setupAuthStateListener()
+        setupNoteAddedListener()
         if auth.currentUser != nil {
             refreshAllData()
         }
@@ -27,6 +28,7 @@ class NotesViewModel: ObservableObject {
     
     deinit {
         discussionsListener?.remove()
+        NotificationCenter.default.removeObserver(self)
     }
     
     private func setupAuthStateListener() {
@@ -36,6 +38,21 @@ class NotesViewModel: ObservableObject {
             } else {
                 self?.clearAllData()
             }
+        }
+    }
+    
+    private func setupNoteAddedListener() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleNoteAdded),
+            name: .noteAdded,
+            object: nil
+        )
+    }
+    
+    @objc private func handleNoteAdded() {
+        Task { @MainActor in
+            refreshAllData()
         }
     }
     

@@ -166,6 +166,8 @@ class BibleViewModel: ObservableObject {
         
         do {
             try await noteRepository.insertNote(note)
+            // Post a notification to refresh notes
+            NotificationCenter.default.post(name: .noteAdded, object: nil)
             selectedVerse = nil
         } catch {
             self.error = error.localizedDescription
