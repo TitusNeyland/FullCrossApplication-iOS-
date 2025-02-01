@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		101F8BB02D4D954D003B1E9F /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 101F8BAF2D4D954D003B1E9F /* SwiftSoup */; };
 		105364782D494F03005E6299 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 105364772D494F03005E6299 /* FirebaseAnalytics */; };
 		1053647A2D494F03005E6299 /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = 105364792D494F03005E6299 /* FirebaseAnalyticsOnDeviceConversion */; };
 		1053647C2D494F03005E6299 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 1053647B2D494F03005E6299 /* FirebaseAuth */; };
@@ -40,22 +41,9 @@
 		1088B79D2D4708FA0093B0A9 /* FullCrossApplication(iOS)UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "FullCrossApplication(iOS)UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		101F8B952D4D8E7F003B1E9F /* Exceptions for "FullCrossApplication(iOS)" folder in "FullCrossApplication(iOS)" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"FullCrossApplication-iOS--Info.plist",
-			);
-			target = 1088B7822D4708F90093B0A9 /* FullCrossApplication(iOS) */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1088B7852D4708F90093B0A9 /* FullCrossApplication(iOS) */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				101F8B952D4D8E7F003B1E9F /* Exceptions for "FullCrossApplication(iOS)" folder in "FullCrossApplication(iOS)" target */,
-			);
 			path = "FullCrossApplication(iOS)";
 			sourceTree = "<group>";
 		};
@@ -84,6 +72,7 @@
 				105364862D494F03005E6299 /* FirebaseStorage in Frameworks */,
 				105364802D494F03005E6299 /* FirebaseFirestore in Frameworks */,
 				1053647A2D494F03005E6299 /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
+				101F8BB02D4D954D003B1E9F /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -152,6 +141,7 @@
 				105364812D494F03005E6299 /* FirebaseFirestoreCombine-Community */,
 				105364832D494F03005E6299 /* FirebaseMessaging */,
 				105364852D494F03005E6299 /* FirebaseStorage */,
+				101F8BAF2D4D954D003B1E9F /* SwiftSoup */,
 			);
 			productName = "FullCrossApplication(iOS)";
 			productReference = 1088B7832D4708F90093B0A9 /* FullCrossApplication(iOS).app */;
@@ -238,6 +228,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				105364762D494F03005E6299 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				101F8BAE2D4D954D003B1E9F /* XCRemoteSwiftPackageReference "SwiftSoup" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1088B7842D4708F90093B0A9 /* Products */;
@@ -604,6 +595,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		101F8BAE2D4D954D003B1E9F /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.7;
+			};
+		};
 		105364762D494F03005E6299 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
@@ -615,6 +614,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		101F8BAF2D4D954D003B1E9F /* SwiftSoup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 101F8BAE2D4D954D003B1E9F /* XCRemoteSwiftPackageReference "SwiftSoup" */;
+			productName = SwiftSoup;
+		};
 		105364772D494F03005E6299 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 105364762D494F03005E6299 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
