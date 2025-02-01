@@ -17,6 +17,8 @@ class BibleViewModel: ObservableObject {
     @Published private(set) var verseOfDay: VerseOfDay?
     @Published private(set) var isLoadingVerse = false
     @Published private(set) var verseError: String?
+    @Published private(set) var totalChapters: Int = 0
+    @Published private(set) var currentChapterIndex: Int = 0
     
     // MARK: - Private Properties
     private let repository: BibleAPI
@@ -102,29 +104,37 @@ class BibleViewModel: ObservableObject {
         do {
             let response = try await repository.getChapter(bibleId: bibleId, chapterId: chapterId)
             currentChapter = response.data
-            currentChapterNumber = Int(response.data.number)
+            
+            // Update the current chapter index based on the chapters array
+            if let book = selectedBook, let chapters = book.chapters {
+                currentChapterIndex = chapters.firstIndex(where: { $0.id == chapterId }) ?? 0
+            }
         } catch {
-            self.error = error.localizedDescription
+            self.error = "Failed to load chapter: \(error.localizedDescription)"
+            print("Error loading chapter: \(error)")
         }
         
         isLoading = false
     }
     
     func loadNextChapter(bibleId: String) async {
-        guard let currentNumber = currentChapterNumber,
-              let bookId = selectedBook?.id else { return }
+        guard let book = selectedBook,
+              let chapters = book.chapters,
+              currentChapterIndex < chapters.count - 1 else { return }
         
-        let nextChapterId = "\(bookId).\(currentNumber + 1)"
-        await loadChapter(bibleId: bibleId, chapterId: nextChapterId)
+        let nextIndex = currentChapterIndex + 1
+        let nextChapter = chapters[nextIndex]
+        await loadChapter(bibleId: bibleId, chapterId: nextChapter.id)
     }
     
     func loadPreviousChapter(bibleId: String) async {
-        guard let currentNumber = currentChapterNumber,
-              currentNumber > 1,
-              let bookId = selectedBook?.id else { return }
+        guard let book = selectedBook,
+              let chapters = book.chapters,
+              currentChapterIndex > 0 else { return }
         
-        let previousChapterId = "\(bookId).\(currentNumber - 1)"
-        await loadChapter(bibleId: bibleId, chapterId: previousChapterId)
+        let previousIndex = currentChapterIndex - 1
+        let previousChapter = chapters[previousIndex]
+        await loadChapter(bibleId: bibleId, chapterId: previousChapter.id)
     }
     
     func clearChapter() {
@@ -146,6 +156,13 @@ class BibleViewModel: ObservableObject {
     
     func setSelectedBook(_ book: Book?) {
         selectedBook = book
+        if let book = book {
+            totalChapters = book.chapters?.count ?? 0
+            currentChapterIndex = 0 // Reset index when selecting a new book
+        } else {
+            totalChapters = 0
+            currentChapterIndex = 0
+        }
     }
     
     func setSelectedVerse(_ verse: String) {
