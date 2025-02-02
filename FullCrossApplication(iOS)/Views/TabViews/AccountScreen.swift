@@ -312,6 +312,8 @@ struct ProfileImagePicker: View {
 struct FriendsList: View {
     let contactsViewModel: ContactsViewModel
     let onDismiss: () -> Void
+    @State private var showingDeleteAlert = false
+    @State private var friendToDelete: UserProfile?
     
     var body: some View {
         NavigationView {
@@ -329,9 +331,8 @@ struct FriendsList: View {
                         Spacer()
                         
                         Button(action: {
-                            Task {
-                                // Implement remove friend functionality
-                            }
+                            friendToDelete = friend
+                            showingDeleteAlert = true
                         }) {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.red)
@@ -345,6 +346,21 @@ struct FriendsList: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done", action: onDismiss)
                 }
+            }
+            .alert("Remove Friend", isPresented: $showingDeleteAlert) {
+                Button("Cancel", role: .cancel) {
+                    friendToDelete = nil
+                }
+                Button("Remove", role: .destructive) {
+                    if let friend = friendToDelete {
+                        Task {
+                            await contactsViewModel.removeFriend(friend.id)
+                        }
+                    }
+                    friendToDelete = nil
+                }
+            } message: {
+                Text("Are you sure you want to remove \(friendToDelete?.fullName ?? "") from your friends list?")
             }
         }
     }
