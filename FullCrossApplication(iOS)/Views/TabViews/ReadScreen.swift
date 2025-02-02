@@ -6,6 +6,7 @@ struct ReadScreen: View {
     @State private var searchQuery = ""
     @State private var showNoteDialog = false
     @State private var scrollOffset: CGFloat = 0
+    @GestureState private var dragOffset: CGFloat = 0
     
     init() {
         // Create the view model on the main actor
@@ -56,6 +57,32 @@ struct ReadScreen: View {
                         .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                             scrollOffset = value
                         }
+                        .gesture(
+                            DragGesture()
+                                .updating($dragOffset) { value, state, _ in
+                                    state = value.translation.width
+                                }
+                                .onEnded { value in
+                                    let threshold: CGFloat = 50
+                                    if value.translation.width > threshold {
+                                        // Swipe right - go to previous chapter
+                                        if viewModel.currentChapterIndex > 0,
+                                           let bible = viewModel.selectedBible {
+                                            Task {
+                                                await viewModel.loadPreviousChapter(bibleId: bible.id)
+                                            }
+                                        }
+                                    } else if value.translation.width < -threshold {
+                                        // Swipe left - go to next chapter
+                                        if viewModel.currentChapterIndex < viewModel.totalChapters - 1,
+                                           let bible = viewModel.selectedBible {
+                                            Task {
+                                                await viewModel.loadNextChapter(bibleId: bible.id)
+                                            }
+                                        }
+                                    }
+                                }
+                        )
                     }
                 }
                 
@@ -71,6 +98,30 @@ struct ReadScreen: View {
                         .foregroundColor(.red)
                         .padding()
                 }
+                
+                // Visual feedback for swipe
+                HStack {
+                    if dragOffset > 30 && viewModel.currentChapterIndex > 0 {
+                        Image(systemName: "chevron.left.circle.fill")
+                            .foregroundColor(.gray)
+                            .imageScale(.large)
+                            .opacity(min(1.0, dragOffset / 100))
+                            .offset(x: dragOffset)
+                            .animation(.easeOut, value: dragOffset)
+                    }
+                    
+                    Spacer()
+                    
+                    if dragOffset < -30 && viewModel.currentChapterIndex < viewModel.totalChapters - 1 {
+                        Image(systemName: "chevron.right.circle.fill")
+                            .foregroundColor(.gray)
+                            .imageScale(.large)
+                            .opacity(min(1.0, -dragOffset / 100))
+                            .offset(x: dragOffset)
+                            .animation(.easeOut, value: dragOffset)
+                    }
+                }
+                .padding()
             }
             .navigationBarTitleDisplayMode(.inline)
         }
