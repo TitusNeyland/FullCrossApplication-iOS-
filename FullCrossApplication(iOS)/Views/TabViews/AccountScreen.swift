@@ -56,10 +56,7 @@ struct AccountScreen: View {
                 }
                 
                 // App Settings Section
-                settingsSection(title: "App Settings") {
-                    darkModeRow
-                    settingsRow(icon: "globe", title: "Language")
-                }
+                appSettingsSection
                 
                 // Support Section
                 settingsSection(title: "Support") {
@@ -229,16 +226,39 @@ struct AccountScreen: View {
     
     private var darkModeRow: some View {
         HStack {
-            Image(systemName: "moon")
+            Image(systemName: "moon.fill")
                 .frame(width: 24)
+                .foregroundColor(.primary)
+            
             Text("Dark Mode")
+                .font(.body)
+            
             Spacer()
+            
             Toggle("", isOn: Binding(
                 get: { themeViewModel.isDarkMode },
                 set: { _ in themeViewModel.toggleDarkMode() }
             ))
+            .tint(.green)  // This matches your Material Green color
+            .toggleStyle(SwitchToggleStyle(tint: Color(red: 76/255, green: 175/255, blue: 80/255))) // RGB for Material Green 500
         }
         .padding()
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(10)
+    }
+    
+    private var appSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("App Settings")
+                .font(.title3)
+                .fontWeight(.bold)
+                .padding(.vertical, 8)
+            
+            darkModeRow
+            
+            settingsRow(icon: "globe", title: "Language")
+        }
+        .padding(.horizontal)
     }
 }
 
