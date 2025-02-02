@@ -2,8 +2,39 @@ import Foundation
 import EventKit
 
 class WatchViewModel: ObservableObject {
-    @Published var viewerCount: Int = 0
+    @Published var viewerCount: Int = Int.random(in: 15...31)
     @Published var streamSettings: StreamSettings?
+    private var viewerUpdateTimer: Timer?
+    
+    init() {
+        // Start the viewer count update timer
+        startViewerCountUpdates()
+        fetchStreamSettings()
+    }
+    
+    deinit {
+        // Clean up timer when view model is deallocated
+        viewerUpdateTimer?.invalidate()
+    }
+    
+    private func startViewerCountUpdates() {
+        // Update immediately and then every 25 seconds
+        updateViewerCount()
+        viewerUpdateTimer = Timer.scheduledTimer(withTimeInterval: 25.0, repeats: true) { [weak self] _ in
+            self?.updateViewerCount()
+        }
+    }
+    
+    private func updateViewerCount() {
+        DispatchQueue.main.async {
+            self.viewerCount = Int.random(in: 15...31)
+        }
+    }
+    
+    private func fetchStreamSettings() {
+        // Example stream URL - replace with your actual stream URL
+        streamSettings = StreamSettings(streamUrl: "https://www.facebook.com/100079371798055/videos/655144869785669")
+    }
     
     struct StreamSettings {
         let streamUrl: String
