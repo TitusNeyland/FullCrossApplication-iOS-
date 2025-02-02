@@ -21,37 +21,38 @@ struct WatchScreen: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Enhanced Header
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Watch Now")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                
-                Text("View the latest live broadcast here")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .overlay(alignment: .trailing) {
-                Button(action: { showSocialDialog = true }) {
-                    ZStack {
-                        Image(systemName: "person.2")
-                            .font(.title2)
-                        
-                        if notificationsViewModel.unreadCount > 0 {
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 8, height: 8)
-                                .offset(x: 8, y: -8)
+        ScrollView {
+            VStack(spacing: 0) {
+                // Enhanced Header
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Watch Now")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    
+                    Text("View the latest live broadcast here")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .overlay(alignment: .trailing) {
+                    Button(action: { showSocialDialog = true }) {
+                        ZStack {
+                            Image(systemName: "person.2")
+                                .font(.title2)
+                            
+                            if notificationsViewModel.unreadCount > 0 {
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 8, y: -8)
+                            }
                         }
                     }
+                    .padding(.trailing)
                 }
-                .padding(.trailing)
-            }
-            
-            ScrollView {
+                
+                // Content
                 LazyVStack(spacing: 16) {
                     // Featured Live Stream
                     FeaturedStreamCard(
