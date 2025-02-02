@@ -17,9 +17,33 @@ struct NotesScreen: View {
         }
     }
     
+    var navigationSubtitle: String {
+        switch selectedTab {
+        case .personalNotes:
+            return "\(viewModel.datesWithNotes.count) days of reflection"
+        case .discussions:
+            return "Join the conversation"
+        }
+    }
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Enhanced Header
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(navigationTitle)
+                        .font(.title)
+                        .fontWeight(.bold)
+                    
+                    Text(navigationSubtitle)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.top)
+                
+                // Tab Picker
                 Picker("Notes Tab", selection: $selectedTab) {
                     ForEach(NotesTab.allCases, id: \.self) { tab in
                         Text(tab.rawValue)
@@ -28,7 +52,7 @@ struct NotesScreen: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
-                .frame(maxHeight: 50) // Adjust height if needed
+                .padding(.vertical, 8)
                 
                 // Content Section
                 TabView(selection: $selectedTab) {
@@ -47,7 +71,6 @@ struct NotesScreen: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
-            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
