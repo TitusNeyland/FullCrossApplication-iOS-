@@ -2,35 +2,36 @@ import SwiftUI
 import Combine
 
 class ThemeViewModel: ObservableObject {
-    @Published var isDarkMode: Bool {
-        didSet {
-            UserDefaults.standard.set(isDarkMode, forKey: "isDarkMode")
-        }
-    }
-    
-    private let userDefaults = UserDefaults.standard
+    @Published var isDarkMode: Bool = false
+    private let userPreferences = UserPreferences.shared
     private var cancellables = Set<AnyCancellable>()
     
     init() {
-        // Load saved dark mode preference, default to system setting if not set
-        self.isDarkMode = userDefaults.object(forKey: "isDarkMode") as? Bool ?? false
-        
-        // Listen for changes to system dark mode setting
-        NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
-            .sink { [weak self] _ in
-                self?.checkSystemDarkMode()
+        // Subscribe to changes from UserPreferences
+        userPreferences.darkModePublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newValue in
+                self?.isDarkMode = newValue
+                self?.applyTheme()
             }
             .store(in: &cancellables)
+        
+        // Initialize with current value
+        isDarkMode = userPreferences.isDarkMode
+        applyTheme()
     }
     
     func toggleDarkMode() {
-        isDarkMode.toggle()
+        userPreferences.setDarkMode(!isDarkMode)
     }
     
-    private func checkSystemDarkMode() {
-        // If no user preference is set, follow system
-        if userDefaults.object(forKey: "isDarkMode") == nil {
-            isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
+    private func applyTheme() {
+        DispatchQueue.main.async {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                windowScene.windows.forEach { window in
+                    window.overrideUserInterfaceStyle = self.isDarkMode ? .dark : .light
+                }
+            }
         }
     }
 }
