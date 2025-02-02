@@ -40,22 +40,74 @@ class WatchViewModel: ObservableObject {
         let streamUrl: String
     }
     
-    func setReminder(for stream: LiveStream) {
+    func setReminder(for stream: LiveStream, completion: @escaping (Error?) -> Void = { _ in }) {
         let eventStore = EKEventStore()
         
-        eventStore.requestAccess(to: .event) { granted, error in
-            if granted && error == nil {
-                let event = EKEvent(eventStore: eventStore)
-                event.title = stream.title
-                event.startDate = stream.startTime
-                event.endDate = stream.startTime.addingTimeInterval(TimeInterval(stream.durationMinutes * 60))
-                event.notes = "Join us for the live stream at: \(stream.facebookUrl)"
-                event.calendar = eventStore.defaultCalendarForNewEvents
-                
+        if #available(iOS 17.0, *) {
+            Task {
                 do {
-                    try eventStore.save(event, span: .thisEvent)
+                    let granted = try await eventStore.requestFullAccessToEvents()
+                    if granted {
+                        let event = EKEvent(eventStore: eventStore)
+                        event.title = stream.title
+                        event.startDate = stream.startTime
+                        event.endDate = stream.startTime.addingTimeInterval(TimeInterval(stream.durationMinutes * 60))
+                        event.notes = """
+                        Join us for \(stream.title)
+                        
+                        Watch live at: \(stream.facebookUrl)
+                        """
+                        event.location = "Facebook Live"
+                        event.calendar = eventStore.defaultCalendarForNewEvents
+                        
+                        // Add 15-minute reminder
+                        let alarm = EKAlarm(relativeOffset: -15 * 60) // 15 minutes before
+                        event.addAlarm(alarm)
+                        
+                        try eventStore.save(event, span: .thisEvent)
+                        await MainActor.run {
+                            completion(nil)
+                        }
+                    } else {
+                        await MainActor.run {
+                            completion(NSError(domain: "Calendar", code: -1, userInfo: [NSLocalizedDescriptionKey: "Permission denied"]))
+                        }
+                    }
                 } catch {
-                    print("Error saving event: \(error)")
+                    await MainActor.run {
+                        completion(error)
+                    }
+                }
+            }
+        } else {
+            eventStore.requestAccess(to: .event) { granted, error in
+                DispatchQueue.main.async {
+                    if granted && error == nil {
+                        let event = EKEvent(eventStore: eventStore)
+                        event.title = stream.title
+                        event.startDate = stream.startTime
+                        event.endDate = stream.startTime.addingTimeInterval(TimeInterval(stream.durationMinutes * 60))
+                        event.notes = """
+                        Join us for \(stream.title)
+                        
+                        Watch live at: \(stream.facebookUrl)
+                        """
+                        event.location = "Facebook Live"
+                        event.calendar = eventStore.defaultCalendarForNewEvents
+                        
+                        // Add 15-minute reminder
+                        let alarm = EKAlarm(relativeOffset: -15 * 60) // 15 minutes before
+                        event.addAlarm(alarm)
+                        
+                        do {
+                            try eventStore.save(event, span: .thisEvent)
+                            completion(nil)
+                        } catch {
+                            completion(error)
+                        }
+                    } else {
+                        completion(error ?? NSError(domain: "Calendar", code: -1, userInfo: [NSLocalizedDescriptionKey: "Permission denied"]))
+                    }
                 }
             }
         }

@@ -96,6 +96,7 @@ struct FeaturedStreamCard: View {
     let stream: LiveStream
     @StateObject private var watchViewModel = WatchViewModel()
     @Environment(\.openURL) private var openURL
+    @State private var showPermissionAlert = false
     
     var body: some View {
         Card {
@@ -179,6 +180,16 @@ struct FeaturedStreamCard: View {
                 .padding()
             }
         }
+        .alert("Calendar Access", isPresented: $showPermissionAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text("Calendar permission is needed to set reminders for upcoming services.")
+        }
     }
 }
 
@@ -201,6 +212,7 @@ struct UpcomingStreamCard: View {
     let stream: LiveStream
     @StateObject private var watchViewModel = WatchViewModel()
     @State private var showPermissionAlert = false
+    @State private var showSuccessToast = false
     
     var body: some View {
         Card {
@@ -237,7 +249,13 @@ struct UpcomingStreamCard: View {
                 
                 // Reminder button
                 Button {
-                    requestCalendarAccess()
+                    watchViewModel.setReminder(for: stream) { error in
+                        if let error = error {
+                            showPermissionAlert = true
+                        } else {
+                            showSuccessToast = true
+                        }
+                    }
                 } label: {
                     Image(systemName: "bell")
                         .font(.title3)
@@ -256,6 +274,18 @@ struct UpcomingStreamCard: View {
         } message: {
             Text("Calendar permission is needed to set reminders for upcoming services.")
         }
+        .overlay {
+            if showSuccessToast {
+                ToastView(message: "Reminder set successfully")
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            withAnimation {
+                                showSuccessToast = false
+                            }
+                        }
+                    }
+            }
+        }
     }
     
     private var timeString: String {
@@ -269,48 +299,20 @@ struct UpcomingStreamCard: View {
         formatter.dateFormat = "EEE"
         return formatter.string(from: stream.startTime)
     }
+}
+
+// Add a simple toast view
+struct ToastView: View {
+    let message: String
     
-    private func requestCalendarAccess() {
-        let eventStore = EKEventStore()
-        
-        if #available(iOS 17.0, *) {
-            Task {
-                do {
-                    let granted = try await eventStore.requestFullAccessToEvents()
-                    if granted {
-                        await addEventToCalendar(store: eventStore)
-                    } else {
-                        showPermissionAlert = true
-                    }
-                } catch {
-                    showPermissionAlert = true
-                }
-            }
-        } else {
-            eventStore.requestAccess(to: .event) { granted, error in
-                if granted && error == nil {
-                    Task { @MainActor in
-                        await addEventToCalendar(store: eventStore)
-                    }
-                } else {
-                    showPermissionAlert = true
-                }
-            }
-        }
-    }
-    
-    private func addEventToCalendar(store: EKEventStore) async {
-        do {
-            let event = EKEvent(eventStore: store)
-            event.title = stream.title
-            event.startDate = stream.startTime
-            event.endDate = stream.startTime.addingTimeInterval(TimeInterval(stream.durationMinutes * 60))
-            event.notes = "Join us for the live stream at: \(stream.facebookUrl)"
-            event.calendar = store.defaultCalendarForNewEvents
-            
-            try store.save(event, span: .thisEvent)
-        } catch {
-            print("Error saving event: \(error.localizedDescription)")
-        }
+    var body: some View {
+        Text(message)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
+            .shadow(radius: 4)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .zIndex(1)
     }
 } 
