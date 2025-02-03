@@ -464,6 +464,7 @@ struct VerseOfDayCard: View {
                     viewModel.refreshVerseOfDay()
                 } label: {
                     Image(systemName: "arrow.clockwise")
+                        .foregroundColor(.secondary)
                 }
             }
             

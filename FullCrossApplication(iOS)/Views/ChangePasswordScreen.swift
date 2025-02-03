@@ -59,19 +59,12 @@ struct ChangePasswordScreen: View {
                             authViewModel.setError("Please ensure your new password meets the requirements and matches the confirmation")
                         }
                     } label: {
-                        HStack {
-                            if authViewModel.isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Text("Change Password")
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                        Text("Change Password")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.primary)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
                     }
                     .disabled(authViewModel.isLoading || 
                             currentPassword.isEmpty || 

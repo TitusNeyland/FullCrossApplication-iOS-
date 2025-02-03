@@ -80,7 +80,9 @@ struct AccountScreen: View {
                 Button(action: { showFriendsList = true }) {
                     HStack {
                         Image(systemName: "person.2")
+                            .foregroundColor(.primary)
                         Text("Manage Friends")
+                            .foregroundColor(.primary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -149,10 +151,12 @@ struct AccountScreen: View {
                 HStack {
                     Image(systemName: "person.2")
                         .font(.title2)
+                        .foregroundColor(.primary)
                     
                     VStack(alignment: .leading) {
                         Text("Friends")
                             .font(.headline)
+                            .foregroundColor(.primary)
                         Text("\(authViewModel.friendsCount) friends")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -289,10 +293,11 @@ struct ProfileImagePicker: View {
                 
                 PhotosPicker(selection: $selectedItem, matching: .images) {
                     Image(systemName: "camera.fill")
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .padding(8)
-                        .background(Color.accentColor)
+                        .background(.ultraThinMaterial)
                         .clipShape(Circle())
+                        .offset(x: 5, y: 5)
                 }
                 .offset(x: 8, y: 2)
             }

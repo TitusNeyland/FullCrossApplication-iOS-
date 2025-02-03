@@ -20,6 +20,18 @@ struct MainScreen: View {
         }
     }
     
+    init(onSignOut: @escaping () -> Void) {
+        self.onSignOut = onSignOut
+        
+        // Customize TabBar appearance
+        let appearance = UITabBarAppearance()
+        appearance.stackedLayoutAppearance.selected.iconColor = .black
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor.black]
+        
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+    
     var body: some View {
         NavigationStack {
             TabView(selection: $selectedTab) {

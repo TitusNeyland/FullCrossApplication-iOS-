@@ -34,13 +34,17 @@ struct DiscussionDetailView: View {
                                 }) {
                                     HStack(spacing: 4) {
                                         Image(systemName: discussion.likedByUsers.contains(Auth.auth().currentUser?.uid ?? "") ? "heart.fill" : "heart")
+                                            .foregroundColor(.primary)
                                         Text("\(discussion.likes)")
+                                            .foregroundColor(.primary)
                                     }
                                 }
                                 
                                 HStack(spacing: 4) {
                                     Image(systemName: "bubble.right")
+                                        .foregroundColor(.secondary)
                                     Text("\(discussion.commentCount)")
+                                        .foregroundColor(.secondary)
                                 }
                                 
                                 Spacer()
@@ -84,7 +88,7 @@ struct DiscussionDetailView: View {
                         HStack {
                             Text("Replying to \(replyingTo.authorName)")
                                 .font(.caption)
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                             
                             Spacer()
                             
@@ -157,7 +161,7 @@ struct CommentView: View {
                 if comment.authorId == Auth.auth().currentUser?.uid {
                     Button(action: { showDeleteAlert = true }) {
                         Image(systemName: "trash")
-                            .foregroundColor(.red)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
@@ -165,7 +169,7 @@ struct CommentView: View {
             if let replyToAuthorName = comment.replyToAuthorName {
                 Text("Replying to \(replyToAuthorName)")
                     .font(.caption)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.primary)
             }
             
             Text(comment.content)
@@ -188,16 +192,17 @@ struct CommentView: View {
                             HStack(spacing: 4) {
                                 Text(showReplies ? "Hide replies" : "Show \(comment.replyCount) replies")
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.primary)
                                 Image(systemName: showReplies ? "chevron.up" : "chevron.down")
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.primary)
                             }
                         }
                     }
                     
                     Button("Reply", action: onReply)
                         .font(.caption)
+                        .foregroundColor(.primary)
                         .padding(.leading, 8)
                 }
             }
