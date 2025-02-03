@@ -40,6 +40,7 @@ struct WatchScreen: View {
                         ZStack {
                             Image(systemName: "person.2")
                                 .font(.title2)
+                                .foregroundColor(.primary)
                             
                             if notificationsViewModel.unreadCount > 0 {
                                 Circle()
@@ -172,9 +173,9 @@ struct FeaturedStreamCard: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.accentColor)
+                        .background(Color.primary)
                         .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .cornerRadius(12)
                     }
                 }
                 .padding()
@@ -250,16 +251,20 @@ struct UpcomingStreamCard: View {
                 // Reminder button
                 Button {
                     watchViewModel.setReminder(for: stream) { error in
-                        if let error = error {
-                            showPermissionAlert = true
-                        } else {
-                            showSuccessToast = true
+                        if error == nil {
+                            withAnimation {
+                                showSuccessToast = true
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                withAnimation {
+                                    showSuccessToast = false
+                                }
+                            }
                         }
                     }
                 } label: {
                     Image(systemName: "bell")
-                        .font(.title3)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(.primary)
                 }
             }
             .padding()

@@ -72,7 +72,6 @@ struct NotesScreen: View {
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
@@ -83,6 +82,7 @@ struct NotesScreen: View {
                         }
                     } label: {
                         Image(systemName: "plus")
+                            .foregroundColor(.primary)
                     }
                 }
             }
@@ -150,6 +150,7 @@ struct DateCard: View {
                 HStack {
                     Text(date.formatted(date: .long, time: .omitted))
                         .font(.headline)
+                        .foregroundColor(.primary)
                     
                     Spacer()
                     
@@ -200,7 +201,7 @@ struct NoteItem: View {
                     showDeleteConfirmation = true
                 }) {
                     Image(systemName: "trash")
-                        .foregroundColor(.red)
+                        .foregroundColor(.secondary)
                 }
             }
             
@@ -337,13 +338,17 @@ struct DiscussionCard: View {
                         }) {
                             HStack(spacing: 4) {
                                 Image(systemName: discussion.likedByUsers.contains(Auth.auth().currentUser?.uid ?? "") ? "heart.fill" : "heart")
+                                    .foregroundColor(.primary)
                                 Text("\(discussion.likes)")
+                                    .foregroundColor(.primary)
                             }
                         }
                         
                         HStack(spacing: 4) {
                             Image(systemName: "bubble.right")
+                                .foregroundColor(.secondary)
                             Text("\(discussion.commentCount)")
+                                .foregroundColor(.secondary)
                         }
                     }
                 }

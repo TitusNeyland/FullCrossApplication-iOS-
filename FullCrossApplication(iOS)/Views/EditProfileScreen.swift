@@ -68,19 +68,12 @@ struct EditProfileScreen: View {
                             }
                         }
                     } label: {
-                        HStack {
-                            if authViewModel.isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Text("Save Changes")
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                        Text("Save Changes")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.primary)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
                     }
                     .disabled(authViewModel.isLoading)
                 }

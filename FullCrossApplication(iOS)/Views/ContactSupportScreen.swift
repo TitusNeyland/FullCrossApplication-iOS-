@@ -7,6 +7,7 @@ struct ContactSupportScreen: View {
     @State private var showingMailComposer = false
     @State private var showingMessageComposer = false
     @State private var showSuccessAlert = false
+    @State private var feedbackSent = false
     
     var body: some View {
         NavigationView {
@@ -81,7 +82,7 @@ struct ContactSupportScreen: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.accentColor)
+                            .background(Color.primary)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                         }

@@ -99,8 +99,10 @@ struct SocialConnectionDialog: View {
                 label: {
                     Label("Find Friends", systemImage: "magnifyingglass")
                         .font(.headline)
+                        .foregroundColor(.primary)
                 }
             )
+            .accentColor(.primary)
         }
     }
     
@@ -139,8 +141,10 @@ struct SocialConnectionDialog: View {
                 label: {
                     Label("Sync Contacts", systemImage: "person.crop.circle.badge.plus")
                         .font(.headline)
+                        .foregroundColor(.primary)
                 }
             )
+            .accentColor(.primary)
             
             if let error = contactsViewModel.error {
                 Text(error)
