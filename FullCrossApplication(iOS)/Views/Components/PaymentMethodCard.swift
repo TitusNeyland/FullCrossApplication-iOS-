@@ -9,25 +9,11 @@ struct PaymentMethodCard: View {
         Button(action: handlePaymentTap) {
             HStack(spacing: 16) {
                 // Icon
-                Circle()
-                    .fill(Color.accentColor.opacity(0.1))
+                Image(paymentMethod.iconName)
+                    .resizable()
+                    .scaledToFit()
                     .frame(width: 60, height: 60)
-                    .overlay(
-                        Group {
-                            if UIImage(named: paymentMethod.iconName) != nil {
-                                Image(paymentMethod.iconName)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .padding(8)
-                            } else {
-                                Image(systemName: "dollarsign.circle.fill")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .padding(12)
-                                    .foregroundColor(.accentColor)
-                            }
-                        }
-                    )
+                    .foregroundColor(UIImage(named: paymentMethod.iconName) == nil ? .accentColor : .primary)
                 
                 // Content
                 VStack(alignment: .leading, spacing: 4) {
