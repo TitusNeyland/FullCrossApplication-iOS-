@@ -33,15 +33,15 @@ struct MainScreen: View {
     }
     
     var body: some View {
-        NavigationStack {
-            TabView(selection: $selectedTab) {
-                ForEach(availableTabs, id: \.self) { tab in
+        TabView(selection: $selectedTab) {
+            ForEach(availableTabs, id: \.self) { tab in
+                NavigationStack {
                     tabView(for: tab)
-                        .tabItem {
-                            Label(tab.title, systemImage: tab.icon)
-                        }
-                        .tag(tab)
                 }
+                .tabItem {
+                    Label(tab.title, systemImage: tab.icon)
+                }
+                .tag(tab)
             }
         }
         .sheet(isPresented: $showContactSupport) {
@@ -70,29 +70,27 @@ struct MainScreen: View {
     
     @ViewBuilder
     private func tabView(for tab: BottomNavItem) -> some View {
-        NavigationView {
-            switch tab {
-            case .read:
-                ReadScreen()
-            case .notes:
-                NotesScreen()
-            case .watch:
-                WatchScreen()
-            case .donate:
-                DonateScreen()
-            case .account:
-                AccountScreen(
-                    onLogout: onSignOut,
-                    onNavigateToSupport: { showContactSupport = true },
-                    onNavigateToHelpAndFaq: { showHelpAndFaq = true },
-                    onNavigateToChangePassword: { showChangePassword = true },
-                    onNavigateToEditProfile: { showEditProfile = true },
-                    onNavigateToFriends: { showFriendsList = true }
-                )
-                .navigationBarTitleDisplayMode(.inline)
-            case .admin:
-                AdminScreen()
-            }
+        switch tab {
+        case .read:
+            ReadScreen()
+        case .notes:
+            NotesScreen()
+        case .watch:
+            WatchScreen()
+        case .donate:
+            DonateScreen()
+        case .account:
+            AccountScreen(
+                onLogout: onSignOut,
+                onNavigateToSupport: { showContactSupport = true },
+                onNavigateToHelpAndFaq: { showHelpAndFaq = true },
+                onNavigateToChangePassword: { showChangePassword = true },
+                onNavigateToEditProfile: { showEditProfile = true },
+                onNavigateToFriends: { showFriendsList = true }
+            )
+            .navigationBarTitleDisplayMode(.inline)
+        case .admin:
+            AdminScreen()
         }
     }
 }
