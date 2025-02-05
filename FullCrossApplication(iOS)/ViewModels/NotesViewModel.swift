@@ -64,7 +64,7 @@ class NotesViewModel: ObservableObject {
     }
     
     private func refreshAllData() {
-        loadNotesForDate(Date())
+        loadNotesForDate(selectedDate)
         loadDatesWithNotes()
         loadDiscussions()
         loadCurrentUserName()
@@ -95,20 +95,48 @@ class NotesViewModel: ObservableObject {
     }
     
     private func loadNotesForDate(_ date: Date) {
-        do {
-            let userId = try getCurrentUserId()
-            noteRepository.getNotesForDate(date: date, userId: userId)
-                .receive(on: DispatchQueue.main)
-                .sink(
-                    receiveCompletion: { _ in },
-                    receiveValue: { [weak self] notes in
-                        self?.notes = notes
+        guard let userId = auth.currentUser?.uid else { return }
+        
+        // Create date range for the selected date (start to end of day)
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        db.collection("notes")
+            .whereField("userId", isEqualTo: userId)
+            .whereField("date", isGreaterThanOrEqualTo: startOfDay)
+            .whereField("date", isLessThan: endOfDay)
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let documents = snapshot?.documents else {
+                    print("Error fetching notes: \(error?.localizedDescription ?? "Unknown error")")
+                    return
+                }
+                
+                let notes = documents.compactMap { document -> Note? in
+                    guard let timestamp = document.get("date") as? Timestamp,
+                          let title = document.get("title") as? String,
+                          let content = document.get("content") as? String,
+                          let typeString = document.get("type") as? String,
+                          let type = NoteType(rawValue: typeString),
+                          let userId = document.get("userId") as? String else {
+                        return nil
                     }
-                )
-                .store(in: &cancellables)
-        } catch {
-            notes = []
-        }
+                    
+                    return Note(
+                        id: document.documentID,
+                        date: timestamp.dateValue(),
+                        title: title,
+                        content: content,
+                        verseReference: document.get("verseReference") as? String,
+                        type: type,
+                        userId: userId
+                    )
+                }
+                
+                DispatchQueue.main.async {
+                    self?.notes = notes
+                }
+            }
     }
     
     func addNote(title: String, content: String, verseReference: String?, type: NoteType) {
@@ -116,6 +144,7 @@ class NotesViewModel: ObservableObject {
             do {
                 let userId = try getCurrentUserId()
                 let note = Note(
+                    id: UUID().uuidString,
                     date: Date(),
                     title: title,
                     content: content,
@@ -160,20 +189,22 @@ class NotesViewModel: ObservableObject {
     }
     
     private func loadDatesWithNotes() {
-        do {
-            let userId = try getCurrentUserId()
-            noteRepository.getDatesWithNotes(userId: userId)
-                .receive(on: DispatchQueue.main)
-                .sink(
-                    receiveCompletion: { _ in },
-                    receiveValue: { [weak self] dates in
-                        self?.datesWithNotes = Set(dates)
-                    }
-                )
-                .store(in: &cancellables)
-        } catch {
-            datesWithNotes = []
-        }
+        guard let userId = auth.currentUser?.uid else { return }
+        
+        db.collection("notes")
+            .whereField("userId", isEqualTo: userId)
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let documents = snapshot?.documents else { return }
+                
+                let dates = documents.compactMap { document -> Date? in
+                    guard let timestamp = document.get("date") as? Timestamp else { return nil }
+                    return Calendar.current.startOfDay(for: timestamp.dateValue())
+                }
+                
+                DispatchQueue.main.async {
+                    self?.datesWithNotes = Set(dates)
+                }
+            }
     }
     
     private func loadDiscussions() {
@@ -438,5 +469,16 @@ class NotesViewModel: ObservableObject {
                 print("Error deleting discussion: \(error)")
             }
         }
+    }
+    
+    func insertNote(_ note: Note) async throws {
+        try await db.collection("notes").addDocument(data: [
+            "date": Timestamp(date: note.date),
+            "title": note.title,
+            "content": note.content,
+            "verseReference": note.verseReference as Any,
+            "type": note.type.rawValue,
+            "userId": note.userId
+        ])
     }
 } 
