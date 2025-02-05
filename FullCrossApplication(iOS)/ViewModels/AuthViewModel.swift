@@ -19,6 +19,7 @@ class AuthViewModel: ObservableObject {
         Task {
             await checkCurrentUser()
         }
+        setupUser()
     }
     
     private func checkCurrentUser() async {
@@ -68,6 +69,7 @@ class AuthViewModel: ObservableObject {
     func signOut() {
         repository.signOut()
         currentUser = nil
+        profileImage = nil
     }
     
     func clearError() {
@@ -135,9 +137,42 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    // Note: Image upload functionality would need to be implemented with Firebase Storage
     func updateProfileImage(_ image: UIImage) {
-        // TODO: Implement image upload to Firebase Storage
         profileImage = image
+        saveProfileImageToLocalStorage(image)
+    }
+    
+    private func saveProfileImageToLocalStorage(_ image: UIImage) {
+        guard let userId = Auth.auth().currentUser?.uid,
+              let data = image.jpegData(compressionQuality: 0.8) else { return }
+        
+        let fileManager = FileManager.default
+        guard let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        
+        let imagePath = documentsPath.appendingPathComponent("\(userId)_profile.jpg")
+        
+        do {
+            try data.write(to: imagePath)
+        } catch {
+            print("Error saving profile image: \(error)")
+        }
+    }
+    
+    private func loadProfileImageFromLocalStorage() {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        
+        let fileManager = FileManager.default
+        guard let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        
+        let imagePath = documentsPath.appendingPathComponent("\(userId)_profile.jpg")
+        
+        if let data = try? Data(contentsOf: imagePath),
+           let image = UIImage(data: data) {
+            profileImage = image
+        }
+    }
+    
+    private func setupUser() {
+        loadProfileImageFromLocalStorage()
     }
 } 
