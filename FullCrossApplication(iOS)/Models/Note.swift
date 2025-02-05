@@ -1,15 +1,15 @@
 import Foundation
 
-public struct Note: Identifiable {
-    public let id: String
-    public let date: Date
-    public let title: String
-    public let content: String
-    public let verseReference: String?
-    public let type: NoteType
-    public let userId: String
+struct Note: Identifiable {
+    let id: String
+    let date: Date
+    let title: String
+    let content: String
+    let verseReference: String?
+    let type: NoteType
+    let userId: String
     
-    public init(
+    init(
         id: String = UUID().uuidString,
         date: Date,
         title: String,
@@ -28,7 +28,7 @@ public struct Note: Identifiable {
     }
 }
 
-public enum NoteType: String, Codable {
+enum NoteType: String {
     case verse = "VERSE"
     case sermon = "SERMON"
     case general = "GENERAL"
