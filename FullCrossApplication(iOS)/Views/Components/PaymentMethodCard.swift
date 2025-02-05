@@ -11,12 +11,22 @@ struct PaymentMethodCard: View {
                 // Icon
                 Circle()
                     .fill(Color.accentColor.opacity(0.1))
-                    .frame(width: 48, height: 48)
+                    .frame(width: 60, height: 60)
                     .overlay(
-                        Image(paymentMethod.iconName)
-                            .resizable()
-                            .scaledToFit()
-                            .padding(12)
+                        Group {
+                            if UIImage(named: paymentMethod.iconName) != nil {
+                                Image(paymentMethod.iconName)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(8)
+                            } else {
+                                Image(systemName: "dollarsign.circle.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(12)
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
                     )
                 
                 // Content

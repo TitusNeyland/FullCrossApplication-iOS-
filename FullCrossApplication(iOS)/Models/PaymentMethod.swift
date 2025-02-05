@@ -9,10 +9,29 @@ struct PaymentMethod: Identifiable {
     let deepLink: URL?
     let webLink: URL?
     
+    var logoName: String {
+        switch name.lowercased() {
+        case "paypal":
+            return "paypal.logo"
+        case "cash app":
+            return "cashapp.logo"
+        case "venmo":
+            return "venmo.logo"
+        case "zelle":
+            return "zelle.logo"
+        case "apple pay":
+            return "apple.logo"
+        case "givelify":
+            return "givelify.logo"
+        default:
+            return "dollarsign.circle.fill" // System fallback icon
+        }
+    }
+
     static let allMethods: [PaymentMethod] = [
         PaymentMethod(
             name: "PayPal",
-            iconName: "paypal.logo",  // You'll need to add these assets
+            iconName: "paypal.logo",  // Using the asset name
             handle: "church@fullcrossministries.org",
             description: "Support our ministry securely through PayPal",
             deepLink: URL(string: "paypal://send/church@fullcrossministries.org"),
