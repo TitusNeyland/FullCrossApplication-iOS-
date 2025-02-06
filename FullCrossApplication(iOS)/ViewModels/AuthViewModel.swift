@@ -23,8 +23,30 @@ class AuthViewModel: ObservableObject {
     }
     
     private func checkCurrentUser() async {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            currentUser = nil
+            return
+        }
+        
         do {
-            currentUser = try await repository.getCurrentUser()
+            let docSnapshot = try await db.collection("users").document(userId).getDocument()
+            guard let data = docSnapshot.data() else {
+                self.error = "User data not found"
+                return
+            }
+            
+            currentUser = FCUser(
+                id: userId,
+                email: Auth.auth().currentUser?.email ?? "",
+                firstName: data["firstName"] as? String ?? "",
+                lastName: data["lastName"] as? String ?? "",
+                phoneNumber: data["phoneNumber"] as? String ?? "",
+                roles: Set(data["roles"] as? [String] ?? [])
+            )
+            
+            // Fetch additional user data
+            await fetchFriendsCount()
+            loadProfileImageFromLocalStorage()
         } catch {
             self.error = error.localizedDescription
         }
@@ -36,9 +58,10 @@ class AuthViewModel: ObservableObject {
             error = nil
             
             do {
-                currentUser = try await repository.signIn(email: email, password: password)
+                let authResult = try await Auth.auth().signIn(withEmail: email, password: password)
+                await checkCurrentUser() // Fetch user data after successful sign in
             } catch {
-                self.error = "Invalid email or password. Please try again."
+                self.error = error.localizedDescription
             }
             
             isLoading = false
@@ -173,6 +196,21 @@ class AuthViewModel: ObservableObject {
     }
     
     private func setupUser() {
-        loadProfileImageFromLocalStorage()
+        // Listen for auth state changes
+        Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            Task { @MainActor in
+                if let user = user {
+                    // User is signed in, fetch their data
+                    await self?.checkCurrentUser()
+                    self?.loadProfileImageFromLocalStorage()
+                    self?.fetchFriendsCount()
+                } else {
+                    // User is signed out, clear data
+                    self?.currentUser = nil
+                    self?.profileImage = nil
+                    self?.friendsCount = 0
+                }
+            }
+        }
     }
 } 
