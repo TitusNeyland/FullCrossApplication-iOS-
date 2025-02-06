@@ -43,10 +43,16 @@ struct WatchScreen: View {
                                 .foregroundColor(.primary)
                             
                             if notificationsViewModel.unreadCount > 0 {
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: 8, y: -8)
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.red)
+                                    Text("\(notificationsViewModel.unreadCount)")
+                                        .font(.caption2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                }
+                                .frame(width: 20, height: 20)
+                                .offset(x: 10, y: -10)
                             }
                         }
                     }
