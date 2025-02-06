@@ -65,7 +65,6 @@ class NotesViewModel: ObservableObject {
     
     private func refreshAllData() {
         loadNotesForDate(selectedDate)
-        loadDatesWithNotes()
         loadDiscussions()
         loadCurrentUserName()
     }
@@ -97,17 +96,12 @@ class NotesViewModel: ObservableObject {
     private func loadNotesForDate(_ date: Date) {
         guard let userId = auth.currentUser?.uid else { return }
         
-        // Create date range for the selected date (start to end of day)
-        let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
-        
         db.collection("notes")
             .whereField("userId", isEqualTo: userId)
-            .whereField("date", isGreaterThanOrEqualTo: startOfDay)
-            .whereField("date", isLessThan: endOfDay)
+            .order(by: "date", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
-                guard let documents = snapshot?.documents else {
+                guard let self = self,
+                      let documents = snapshot?.documents else {
                     print("Error fetching notes: \(error?.localizedDescription ?? "Unknown error")")
                     return
                 }
@@ -134,7 +128,10 @@ class NotesViewModel: ObservableObject {
                 }
                 
                 DispatchQueue.main.async {
-                    self?.notes = notes
+                    self.notes = notes
+                    
+                    let calendar = Calendar.current
+                    self.datesWithNotes = Set(notes.map { calendar.startOfDay(for: $0.date) })
                 }
             }
     }
@@ -191,20 +188,8 @@ class NotesViewModel: ObservableObject {
     private func loadDatesWithNotes() {
         guard let userId = auth.currentUser?.uid else { return }
         
-        db.collection("notes")
-            .whereField("userId", isEqualTo: userId)
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let documents = snapshot?.documents else { return }
-                
-                let dates = documents.compactMap { document -> Date? in
-                    guard let timestamp = document.get("date") as? Timestamp else { return nil }
-                    return Calendar.current.startOfDay(for: timestamp.dateValue())
-                }
-                
-                DispatchQueue.main.async {
-                    self?.datesWithNotes = Set(dates)
-                }
-            }
+        let calendar = Calendar.current
+        datesWithNotes = Set(notes.map { calendar.startOfDay(for: $0.date) })
     }
     
     private func loadDiscussions() {
