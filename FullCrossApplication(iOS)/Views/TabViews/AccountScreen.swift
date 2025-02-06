@@ -124,19 +124,26 @@ struct AccountScreen: View {
     // MARK: - Private Views
     private var profileCard: some View {
         VStack(spacing: 16) {
-            ProfileImagePicker(
-                imageData: authViewModel.profileImage,
-                onImageSelected: { image in
-                    authViewModel.updateProfileImage(image)
+            if authViewModel.isLoading {
+                ProgressView()
+            } else if let error = authViewModel.error {
+                Text(error)
+                    .foregroundColor(.red)
+            } else {
+                ProfileImagePicker(
+                    imageData: authViewModel.profileImage,
+                    onImageSelected: { image in
+                        authViewModel.updateProfileImage(image)
+                    }
+                )
+                
+                VStack(spacing: 4) {
+                    Text("\(authViewModel.currentUser?.firstName ?? "") \(authViewModel.currentUser?.lastName ?? "")")
+                        .font(.headline)
+                    Text(authViewModel.currentUser?.email ?? "")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
-            )
-            
-            VStack(spacing: 4) {
-                Text("\(authViewModel.currentUser?.firstName ?? "") \(authViewModel.currentUser?.lastName ?? "")")
-                    .font(.headline)
-                Text(authViewModel.currentUser?.email ?? "")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
             }
         }
         .padding()
