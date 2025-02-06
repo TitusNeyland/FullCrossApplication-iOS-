@@ -301,13 +301,18 @@ struct DiscussionCard: View {
     let viewModel: NotesViewModel
     @Environment(\.colorScheme) var colorScheme
     @State private var showDiscussionDetail = false
+    @State private var showDeleteAlert = false
+    
+    private var isAuthor: Bool {
+        discussion.authorId == Auth.auth().currentUser?.uid
+    }
     
     var body: some View {
         Button(action: {
             showDiscussionDetail = true
         }) {
             VStack(alignment: .leading, spacing: 12) {
-                // Title and Timestamp
+                // Title and timestamp
                 HStack {
                     Text(discussion.title)
                         .font(.headline)
@@ -350,16 +355,36 @@ struct DiscussionCard: View {
                             Text("\(discussion.commentCount)")
                                 .foregroundColor(.secondary)
                         }
+                        
+                        if isAuthor {
+                            Button(action: {
+                                showDeleteAlert = true
+                            }) {
+                                Image(systemName: "xmark")
+                                    .foregroundColor(.red)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
             }
             .padding()
-            .background(colorScheme == .dark ? Color(.systemGray6) : .white)
-            .cornerRadius(12)
-            .shadow(radius: 2)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
+            )
         }
         .buttonStyle(PlainButtonStyle())
-        .fullScreenCover(isPresented: $showDiscussionDetail) {
+        .alert("Delete Discussion", isPresented: $showDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                viewModel.deleteDiscussion(discussion.id)
+            }
+        } message: {
+            Text("Are you sure you want to delete this discussion? This action cannot be undone.")
+        }
+        .sheet(isPresented: $showDiscussionDetail) {
             DiscussionDetailView(discussion: discussion, viewModel: viewModel)
                 .edgesIgnoringSafeArea(.bottom)
         }
