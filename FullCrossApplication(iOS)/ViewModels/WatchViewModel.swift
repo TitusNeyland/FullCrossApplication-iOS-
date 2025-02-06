@@ -1,15 +1,17 @@
 import Foundation
 import EventKit
+import FirebaseFirestore
 
 class WatchViewModel: ObservableObject {
     @Published var viewerCount: Int = Int.random(in: 15...31)
     @Published var streamSettings: StreamSettings?
     private var viewerUpdateTimer: Timer?
+    private let db = Firestore.firestore()
     
     init() {
         // Start the viewer count update timer
         startViewerCountUpdates()
-        fetchStreamSettings()
+        loadStreamSettings()
     }
     
     deinit {
@@ -31,13 +33,32 @@ class WatchViewModel: ObservableObject {
         }
     }
     
-    private func fetchStreamSettings() {
-        // Example stream URL - replace with your actual stream URL
-        streamSettings = StreamSettings(streamUrl: "https://www.facebook.com/100079371798055/videos/655144869785669")
+    private func loadStreamSettings() {
+        db.collection("settings").document("stream")
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let document = snapshot?.data() else {
+                    print("Error fetching stream settings: \(error?.localizedDescription ?? "No data")")
+                    return
+                }
+                
+                DispatchQueue.main.async {
+                    let streamUrl = document["streamUrl"] as? String ?? ""
+                    let lastUpdated = (document["lastUpdated"] as? Timestamp)?.dateValue() ?? Date()
+                    let updatedBy = document["updatedBy"] as? String ?? ""
+                    
+                    self?.streamSettings = StreamSettings(
+                        streamUrl: streamUrl,
+                        lastUpdated: lastUpdated,
+                        updatedBy: updatedBy
+                    )
+                }
+            }
     }
     
     struct StreamSettings {
         let streamUrl: String
+        let lastUpdated: Date
+        let updatedBy: String
     }
     
     func setReminder(for stream: LiveStream, completion: @escaping (Error?) -> Void = { _ in }) {

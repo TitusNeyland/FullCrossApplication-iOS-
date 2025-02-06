@@ -167,6 +167,7 @@ struct FeaturedStreamCard: View {
                     
                     Button {
                         if let streamUrl = watchViewModel.streamSettings?.streamUrl,
+                           !streamUrl.isEmpty,
                            let url = URL(string: streamUrl) {
                             openURL(url)
                         } else if let url = URL(string: stream.facebookUrl) {
