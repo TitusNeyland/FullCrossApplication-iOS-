@@ -147,13 +147,13 @@ struct FeaturedStreamCard: View {
             VStack(spacing: 0) {
                 // Image section
                 ZStack(alignment: .topLeading) {
-                    // Placeholder/Loading state
                     Rectangle()
                         .fill(Color(.systemGray5))
                         .overlay {
-                            Image(systemName: "play.circle")
-                                .font(.system(size: 48))
-                                .foregroundColor(.secondary.opacity(0.5))
+                            Image("cross.logo")
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 200)
                         }
                         .frame(height: 200)
                     
@@ -163,7 +163,6 @@ struct FeaturedStreamCard: View {
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                     } placeholder: {
-                        // Placeholder is already showing
                         EmptyView()
                     }
                     .frame(height: 200)
@@ -189,10 +188,11 @@ struct FeaturedStreamCard: View {
                 }
                 
                 // Content section
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
                     Text(stream.title)
                         .font(.title3)
                         .fontWeight(.bold)
+                        .padding(.top, 30)
                     
                     HStack {
                         Image(systemName: "eye")
@@ -221,8 +221,9 @@ struct FeaturedStreamCard: View {
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
+                    .padding(.vertical, 8)
                 }
-                .padding()
+                .padding(20)
             }
         }
         .alert("Calendar Access", isPresented: $showPermissionAlert) {
