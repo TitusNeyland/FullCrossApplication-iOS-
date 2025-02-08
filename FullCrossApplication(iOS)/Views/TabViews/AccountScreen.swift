@@ -89,6 +89,19 @@ struct AccountScreen: View {
                 }
                 .buttonStyle(.bordered)
                 .padding(.horizontal)
+                
+                // Privacy Policy Section
+                Section {
+                    NavigationLink {
+                        PrivacyPolicyView()
+                    } label: {
+                        MenuRow(
+                            icon: "lock.shield",
+                            title: "Privacy Policy",
+                            subtitle: "Learn how we protect your data"
+                        )
+                    }
+                }
             }
             .padding()
         }
