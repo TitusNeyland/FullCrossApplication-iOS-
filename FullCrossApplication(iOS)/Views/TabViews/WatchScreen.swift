@@ -89,7 +89,7 @@ struct WatchScreen: View {
                             durationMinutes: 60,
                             viewerCount: watchViewModel.viewerCount,
                             isLive: true,
-                            facebookUrl: "https://www.facebook.com/100079371798055/videos/655144869785669"
+                            facebookUrl: "https://www.facebook.com/profile.php?id=100079371798055"
                         )
                     )
                     
