@@ -45,20 +45,53 @@ class WatchViewModel: ObservableObject {
                     let streamUrl = document["streamUrl"] as? String ?? ""
                     let lastUpdated = (document["lastUpdated"] as? Timestamp)?.dateValue() ?? Date()
                     let updatedBy = document["updatedBy"] as? String ?? ""
+                    let monthlyTheme = document["monthlyTheme"] as? String ?? ""
+                    
+                    // Load previous services
+                    let previousServicesData = document["previousServices"] as? [[String: Any]] ?? []
+                    let previousServices = previousServicesData.compactMap { data -> StreamSettings.PreviousService? in
+                        guard let id = data["id"] as? String,
+                              let timestamp = data["date"] as? Timestamp,
+                              let url = data["url"] as? String else {
+                            return nil
+                        }
+                        return StreamSettings.PreviousService(
+                            id: id,
+                            date: timestamp.dateValue(),
+                            url: url
+                        )
+                    }
                     
                     self?.streamSettings = StreamSettings(
                         streamUrl: streamUrl,
                         lastUpdated: lastUpdated,
-                        updatedBy: updatedBy
+                        updatedBy: updatedBy,
+                        previousServices: previousServices,
+                        monthlyTheme: monthlyTheme
                     )
                 }
             }
+    }
+    
+    func getUrlForPreviousService(date: Date) -> String? {
+        let calendar = Calendar.current
+        return streamSettings?.previousServices.first { service in
+            calendar.isDate(service.date, inSameDayAs: date)
+        }?.url
     }
     
     struct StreamSettings {
         let streamUrl: String
         let lastUpdated: Date
         let updatedBy: String
+        let previousServices: [PreviousService]
+        let monthlyTheme: String
+        
+        struct PreviousService {
+            let id: String
+            let date: Date
+            let url: String
+        }
     }
     
     func setReminder(for stream: LiveStream, completion: @escaping (Error?) -> Void = { _ in }) {

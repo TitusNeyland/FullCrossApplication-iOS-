@@ -20,11 +20,17 @@ struct WatchScreen: View {
         _contactsViewModel = StateObject(wrappedValue: ContactsViewModel(authViewModel: AuthViewModel()))
     }
     
+    private var currentMonthName: String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMMM"
+        return dateFormatter.string(from: Date())
+    }
+    
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
+            VStack(spacing: 16) {
                 // Enhanced Header
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Watch Now")
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -59,8 +65,21 @@ struct WatchScreen: View {
                     .padding(.trailing)
                 }
                 
-                // Content
+                // Video Player Section
                 LazyVStack(spacing: 16) {
+                    // Monthly Theme Section (moved closer to video player)
+                    if let theme = watchViewModel.streamSettings?.monthlyTheme,
+                       !theme.isEmpty {
+                        HStack(spacing: 4) {
+                            Text("\(currentMonthName)'s Theme:")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            Text(theme)
+                        }
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
                     // Featured Live Stream
                     FeaturedStreamCard(
                         stream: LiveStream(
@@ -84,6 +103,24 @@ struct WatchScreen: View {
                     // Example upcoming streams
                     ForEach(LiveStream.getUpcomingStreams()) { stream in
                         UpcomingStreamCard(stream: stream)
+                    }
+                    
+                    // Previous Streams Section
+                    Text("Previous Services")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top)
+                    
+                    if LiveStream.getPreviousStreams().isEmpty {
+                        Text("There are no previous streams at the moment")
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 8)
+                    } else {
+                        ForEach(LiveStream.getPreviousStreams()) { stream in
+                            PreviousStreamCard(stream: stream, watchViewModel: watchViewModel)
+                        }
                     }
                 }
                 .padding()
@@ -326,5 +363,72 @@ struct ToastView: View {
             .shadow(radius: 4)
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .zIndex(1)
+    }
+}
+
+struct PreviousStreamCard: View {
+    let stream: LiveStream
+    @Environment(\.openURL) private var openURL
+    @ObservedObject var watchViewModel: WatchViewModel
+    
+    var body: some View {
+        Card {
+            HStack(spacing: 16) {
+                // Time column
+                VStack(alignment: .trailing) {
+                    Text(dateString)
+                        .font(.headline)
+                        .fontWeight(.bold)
+                    
+                    Text(timeString)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(width: 72)
+                
+                // Divider
+                Rectangle()
+                    .fill(Color(.systemGray4))
+                    .frame(width: 1, height: 40)
+                
+                // Content column
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(stream.title)
+                        .font(.headline)
+                        .lineLimit(1)
+                    
+                    Text("\(stream.durationMinutes) min")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Watch Recording button
+                Button {
+                    let url = stream.getVideoUrl(watchViewModel: watchViewModel)
+                    if let url = URL(string: url) {
+                        openURL(url)
+                    }
+                } label: {
+                    Image(systemName: "play.circle")
+                        .font(.title2)
+                        .foregroundColor(.primary)
+                }
+            }
+            .padding()
+        }
+    }
+    
+    private var dateString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: stream.startTime)
+    }
+    
+    private var timeString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: stream.startTime)
     }
 } 
