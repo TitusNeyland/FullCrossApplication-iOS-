@@ -65,145 +65,104 @@ class AdminViewModel: ObservableObject {
             }
     }
     
-    func updateStreamUrl(_ url: String) async {
+    private func updateSettings(updates: [String: Any]) async throws {
         guard let currentUser = auth.currentUser else {
-            self.error = "No user logged in"
-            return
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user logged in"])
         }
         
-        isLoading = true
+        // Get current settings first
+        let snapshot = try await db.collection("settings").document("stream").getDocument()
+        var currentSettings = snapshot.data() ?? [:]
         
+        // Update only the fields that are provided
+        updates.forEach { currentSettings[$0] = $1 }
+        
+        // Always update these fields
+        currentSettings["lastUpdated"] = Timestamp(date: Date())
+        currentSettings["updatedBy"] = currentUser.uid
+        
+        // Save all settings
+        try await db.collection("settings").document("stream").setData(currentSettings)
+        
+        // Update local streamSettings
+        let previousServices = (currentSettings["previousServices"] as? [[String: Any]] ?? []).compactMap { data -> StreamSettings.PreviousService? in
+            guard let id = data["id"] as? String,
+                  let timestamp = data["date"] as? Timestamp,
+                  let url = data["url"] as? String else {
+                return nil
+            }
+            return StreamSettings.PreviousService(id: id, date: timestamp.dateValue(), url: url)
+        }
+        
+        self.streamSettings = StreamSettings(
+            streamUrl: currentSettings["streamUrl"] as? String ?? "",
+            lastUpdated: Date(),
+            updatedBy: currentUser.uid,
+            previousServices: previousServices,
+            monthlyTheme: currentSettings["monthlyTheme"] as? String ?? ""
+        )
+    }
+    
+    func updateStreamUrl(_ url: String) async {
+        isLoading = true
         do {
-            let settings = [
-                "streamUrl": url,
-                "lastUpdated": Timestamp(date: Date()),
-                "updatedBy": currentUser.uid
-            ] as [String : Any]
-            
-            try await db.collection("settings").document("stream").setData(settings)
-            
-            self.streamSettings = StreamSettings(
-                streamUrl: url,
-                lastUpdated: Date(),
-                updatedBy: currentUser.uid
-            )
+            try await updateSettings(updates: ["streamUrl": url])
             self.error = nil
-            self.isLoading = false
         } catch {
             self.error = "Failed to update stream URL: \(error.localizedDescription)"
-            self.isLoading = false
         }
-    }
-    
-    func addPreviousService(date: Date, url: String) async {
-        guard let currentUser = auth.currentUser else {
-            self.error = "No user logged in"
-            return
-        }
-        
-        isLoading = true
-        
-        do {
-            let newService = StreamSettings.PreviousService(
-                id: UUID().uuidString,
-                date: date,
-                url: url
-            )
-            
-            var previousServices = streamSettings?.previousServices ?? []
-            previousServices.append(newService)
-            
-            let settings: [String: Any] = [
-                "streamUrl": streamSettings?.streamUrl ?? "",
-                "lastUpdated": Timestamp(date: Date()),
-                "updatedBy": currentUser.uid,
-                "previousServices": previousServices.map { [
-                    "id": $0.id,
-                    "date": Timestamp(date: $0.date),
-                    "url": $0.url
-                ]}
-            ]
-            
-            try await db.collection("settings").document("stream").setData(settings)
-            
-            self.streamSettings?.previousServices = previousServices
-            self.error = nil
-            self.isLoading = false
-        } catch {
-            self.error = "Failed to add previous service: \(error.localizedDescription)"
-            self.isLoading = false
-        }
-    }
-    
-    func deletePreviousService(_ serviceId: String) async {
-        guard let currentUser = auth.currentUser else {
-            self.error = "No user logged in"
-            return
-        }
-        
-        isLoading = true
-        
-        do {
-            var previousServices = streamSettings?.previousServices ?? []
-            previousServices.removeAll { $0.id == serviceId }
-            
-            let settings: [String: Any] = [
-                "streamUrl": streamSettings?.streamUrl ?? "",
-                "lastUpdated": Timestamp(date: Date()),
-                "updatedBy": currentUser.uid,
-                "previousServices": previousServices.map { [
-                    "id": $0.id,
-                    "date": Timestamp(date: $0.date),
-                    "url": $0.url
-                ]}
-            ]
-            
-            try await db.collection("settings").document("stream").setData(settings)
-            
-            self.streamSettings?.previousServices = previousServices
-            self.error = nil
-            self.isLoading = false
-        } catch {
-            self.error = "Failed to delete previous service: \(error.localizedDescription)"
-            self.isLoading = false
-        }
+        isLoading = false
     }
     
     func updateMonthlyTheme(_ theme: String) async {
-        guard let currentUser = auth.currentUser else {
-            self.error = "No user logged in"
-            return
-        }
-        
         isLoading = true
-        
         do {
-            let settings: [String: Any] = [
-                "streamUrl": streamSettings?.streamUrl ?? "",
-                "lastUpdated": Timestamp(date: Date()),
-                "updatedBy": currentUser.uid,
-                "monthlyTheme": theme,
-                "previousServices": streamSettings?.previousServices.map { [
-                    "id": $0.id,
-                    "date": Timestamp(date: $0.date),
-                    "url": $0.url
-                ]} ?? []
-            ]
-            
-            try await db.collection("settings").document("stream").setData(settings)
-            
-            self.streamSettings = StreamSettings(
-                streamUrl: streamSettings?.streamUrl ?? "",
-                lastUpdated: Date(),
-                updatedBy: currentUser.uid,
-                previousServices: streamSettings?.previousServices ?? [],
-                monthlyTheme: theme
-            )
+            try await updateSettings(updates: ["monthlyTheme": theme])
             self.error = nil
-            self.isLoading = false
         } catch {
             self.error = "Failed to update monthly theme: \(error.localizedDescription)"
-            self.isLoading = false
         }
+        isLoading = false
+    }
+    
+    func addPreviousService(date: Date, url: String) async {
+        isLoading = true
+        do {
+            let newService: [String: Any] = [
+                "id": UUID().uuidString,
+                "date": Timestamp(date: date),
+                "url": url
+            ]
+            
+            var currentServices = streamSettings?.previousServices.map { [
+                "id": $0.id,
+                "date": Timestamp(date: $0.date),
+                "url": $0.url
+            ] } ?? []
+            currentServices.append(newService)
+            
+            try await updateSettings(updates: ["previousServices": currentServices])
+            self.error = nil
+        } catch {
+            self.error = "Failed to add previous service: \(error.localizedDescription)"
+        }
+        isLoading = false
+    }
+    
+    func deletePreviousService(_ serviceId: String) async {
+        isLoading = true
+        do {
+            let updatedServices = streamSettings?.previousServices.filter { $0.id != serviceId }.map { [
+                "id": $0.id,
+                "date": Timestamp(date: $0.date),
+                "url": $0.url
+            ] } ?? []
+            
+            try await updateSettings(updates: ["previousServices": updatedServices])
+            self.error = nil
+        } catch {
+            self.error = "Failed to delete previous service: \(error.localizedDescription)"
+        }
+        isLoading = false
     }
 } 

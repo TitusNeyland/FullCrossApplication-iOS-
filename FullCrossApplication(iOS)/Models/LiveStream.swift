@@ -44,7 +44,7 @@ struct LiveStream: Identifiable {
                 durationMinutes: 50,
                 viewerCount: 0,
                 isLive: false,
-                facebookUrl: "https://www.facebook.com/100079371798055/videos/655144869785669"
+                facebookUrl: "https://www.facebook.com/profile.php?id=100079371798055"
             ),
             LiveStream(
                 title: "Sunday Morning Service",
@@ -53,7 +53,7 @@ struct LiveStream: Identifiable {
                 durationMinutes: 50,
                 viewerCount: 0,
                 isLive: false,
-                facebookUrl: "https://www.facebook.com/100079371798055/videos/655144869785669"
+                facebookUrl: "https://www.facebook.com/profile.php?id=100079371798055"
             )
         ].sorted { $0.startTime < $1.startTime }
     }
@@ -91,7 +91,7 @@ struct LiveStream: Identifiable {
                 durationMinutes: 50,
                 viewerCount: 0,
                 isLive: false,
-                facebookUrl: "https://www.facebook.com/100079371798055/videos/655144869785669"
+                facebookUrl: "https://www.facebook.com/profile.php?id=100079371798055"
             ),
             LiveStream(
                 title: "Sunday Morning Service",
@@ -100,7 +100,7 @@ struct LiveStream: Identifiable {
                 durationMinutes: 50,
                 viewerCount: 0,
                 isLive: false,
-                facebookUrl: "https://www.facebook.com/100079371798055/videos/655144869785669"
+                facebookUrl: "https://www.facebook.com/profile.php?id=100079371798055"
             )
         ]
         
