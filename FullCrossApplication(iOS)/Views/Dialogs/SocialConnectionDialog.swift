@@ -157,7 +157,7 @@ struct SocialConnectionDialog: View {
     
     private var referFriendsButton: some View {
         ShareLink(
-            item: "Join me on this amazing journey app! Download it here: [Your App Link]",
+            item: "Join me on the Full Cross Ministries app! Download it here: [Your App Link]",
             subject: Text("Check out this app!"),
             message: Text("I think you'll love using this app.")
         ) {
@@ -287,7 +287,7 @@ struct ContactsList: View {
     private func shareInvite(contact: Contact) {
         guard let phoneNumber = contact.phoneNumber else { return }
         
-        let message = "Hey! Join me on this amazing app: [Your App Link]"
+        let message = "Hey! Join me on the Full Cross Ministries app: [Your App Link]"
         let smsUrl = URL(string: "sms:\(phoneNumber)&body=\(message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")")
         
         if let url = smsUrl {

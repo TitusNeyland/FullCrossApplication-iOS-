@@ -326,7 +326,7 @@ struct UpcomingStreamCard: View {
         }
         .overlay {
             if showSuccessToast {
-                ToastView(message: "Reminder set successfully")
+                ToastView(message: "Added to Calendar")
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             withAnimation {
