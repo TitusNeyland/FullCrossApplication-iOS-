@@ -76,37 +76,6 @@ struct AccountScreen: View {
                     settingsRow(icon: "envelope", title: "Contact Support", action: onNavigateToSupport)
                 }
                 
-                // Notifications Section
-                Section(header: Text("Notifications")) {
-                    Toggle("Enable Notifications", isOn: $notificationsViewModel.isNotificationsEnabled)
-                        .onChange(of: notificationsViewModel.isNotificationsEnabled) { newValue in
-                            if newValue {
-                                notificationsViewModel.requestNotificationPermission()
-                            }
-                        }
-                    
-                    if notificationsViewModel.isNotificationsEnabled {
-                        NavigationLink {
-                            NotificationPreferencesView(viewModel: notificationsViewModel)
-                        } label: {
-                            MenuRow(
-                                icon: "",
-                                title: "Notification Preferences",
-                                subtitle: "Customize what you want to be notified about"
-                            )
-                            .padding(.trailing, 8)
-                        }
-                    }
-                }
-                .alert("Enable Notifications", isPresented: $notificationsViewModel.showPermissionAlert) {
-                    Button("Open Settings") {
-                        notificationsViewModel.openSettings()
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text("To receive notifications, please enable them in your device settings.")
-                }
-                
                 // Logout Button
                 Button(role: .destructive, action: { showLogoutDialog = true }) {
                     HStack {
