@@ -1,17 +1,22 @@
 import Foundation
 import FirebaseAuth
 import FirebaseFirestore
+import UserNotifications
+import SwiftUI
 
 @MainActor
 class NotificationsViewModel: ObservableObject {
     @Published private(set) var notifications: [Notification] = []
     @Published private(set) var unreadCount: Int = 0
+    @Published var isNotificationsEnabled = false
+    @Published var showPermissionAlert = false
     
     private let db = Firestore.firestore()
     private var listenerRegistration: ListenerRegistration?
     
     init() {
         setupNotificationsListener()
+        checkNotificationStatus()
     }
     
     deinit {
@@ -72,5 +77,35 @@ class NotificationsViewModel: ObservableObject {
     func loadNotifications() {
         // This method is not needed in iOS as we're using real-time listeners
         // The setupNotificationsListener handles this functionality
+    }
+    
+    func checkNotificationStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
+            DispatchQueue.main.async {
+                self?.isNotificationsEnabled = settings.authorizationStatus == .authorized
+            }
+        }
+    }
+    
+    func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { [weak self] granted, error in
+            DispatchQueue.main.async {
+                if granted {
+                    self?.isNotificationsEnabled = true
+                } else {
+                    self?.showPermissionAlert = true
+                }
+            }
+            
+            if let error = error {
+                print("Error requesting notification permission: \(error)")
+            }
+        }
+    }
+    
+    func openSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
     }
 } 

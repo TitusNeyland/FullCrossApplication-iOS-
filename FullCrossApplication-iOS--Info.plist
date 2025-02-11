@@ -4,5 +4,13 @@
 <dict>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>We need full access to your calendar to create and manage reminders for upcoming live streams.</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>We'd like to send you notifications about new messages, service reminders, and important updates.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>We'd like to send you notifications about new messages, service reminders, and important updates.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>
