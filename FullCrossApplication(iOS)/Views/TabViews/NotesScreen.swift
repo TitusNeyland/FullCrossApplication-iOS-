@@ -164,9 +164,9 @@ struct DateCard: View {
             if isExpanded {
                 ForEach(notes) { note in
                     Divider()
-                    NoteItem(note: note) {
+                    NoteItem(note: note, onDelete: {
                         onDeleteNote(note)
-                    }
+                    })
                 }
             }
         }
@@ -180,59 +180,77 @@ struct NoteItem: View {
     let note: Note
     let onDelete: () -> Void
     @State private var showDeleteConfirmation = false
+    @State private var showDeletedToast = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(note.title)
-                        .font(.headline)
+        ZStack {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text(note.title)
+                            .font(.headline)
+                        
+                        if let verseRef = note.verseReference {
+                            Text(verseRef)
+                                .font(.subheadline)
+                                .foregroundColor(.green)
+                        }
+                    }
                     
-                    if let verseRef = note.verseReference {
-                        Text(verseRef)
-                            .font(.subheadline)
-                            .foregroundColor(.green)
+                    Spacer()
+                    
+                    Button(action: {
+                        showDeleteConfirmation = true
+                    }) {
+                        Image(systemName: "trash")
+                            .foregroundColor(.secondary)
                     }
                 }
                 
-                Spacer()
+                Text(note.content)
+                    .font(.body)
+                    .lineLimit(3)
+                    .foregroundColor(.secondary)
                 
-                Button(action: {
-                    showDeleteConfirmation = true
-                }) {
-                    Image(systemName: "trash")
+                HStack {
+                    Text(note.type.rawValue)
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                    
+                    Spacer()
+                    
+                    Text(note.date.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
-            
-            Text(note.content)
-                .font(.body)
-                .lineLimit(3)
-                .foregroundColor(.secondary)
-            
-            HStack {
-                Text(note.type.rawValue)
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(8)
-                
-                Spacer()
-                
-                Text(note.date.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            .padding()
+            .alert("Delete Note", isPresented: $showDeleteConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    withAnimation {
+                        showDeletedToast = true
+                    }
+                    // Hide the toast after 2 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        withAnimation {
+                            showDeletedToast = false
+                        }
+                        // Only delete the note after the toast is shown
+                        onDelete()
+                    }
+                }
+            } message: {
+                Text("Are you sure you want to delete this note?")
             }
-        }
-        .padding()
-        .alert("Delete Note", isPresented: $showDeleteConfirmation) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                onDelete()
+            
+            if showDeletedToast {
+                ToastView(message: "Note deleted", systemImage: "trash.circle.fill")
+                    .transition(.move(edge: .top))
             }
-        } message: {
-            Text("Are you sure you want to delete this note?")
         }
     }
 }
@@ -394,6 +412,7 @@ struct DiscussionCard: View {
 struct AddNoteView: View {
     @ObservedObject var viewModel: NotesViewModel
     @Binding var isPresented: Bool
+    @State private var showSuccessToast = false
     
     @State private var title = ""
     @State private var content = ""
@@ -402,24 +421,31 @@ struct AddNoteView: View {
     
     var body: some View {
         NavigationView {
-            Form {
-                Section {
-                    TextField("Title", text: $title)
-                    TextEditor(text: $content)
-                        .frame(height: 100)
-                }
-                
-                Section {
-                    TextField("Verse Reference (Optional)", text: $verseReference)
-                }
-                
-                Section {
-                    Picker("Note Type", selection: $noteType) {
-                        ForEach([NoteType.general, .verse, .sermon], id: \.self) { type in
-                            Text(type.rawValue.capitalized)
-                                .tag(type)
+            ZStack {
+                Form {
+                    Section {
+                        TextField("Title", text: $title)
+                        TextEditor(text: $content)
+                            .frame(height: 100)
+                    }
+                    
+                    Section {
+                        TextField("Verse Reference (Optional)", text: $verseReference)
+                    }
+                    
+                    Section {
+                        Picker("Note Type", selection: $noteType) {
+                            ForEach([NoteType.general, .verse, .sermon], id: \.self) { type in
+                                Text(type.rawValue.capitalized)
+                                    .tag(type)
+                            }
                         }
                     }
+                }
+                
+                if showSuccessToast {
+                    ToastView(message: "Successfully added note", systemImage: "checkmark.circle.fill")
+                        .transition(.move(edge: .top))
                 }
             }
             .navigationTitle("Add Note")
@@ -438,7 +464,14 @@ struct AddNoteView: View {
                             verseReference: verseReference.isEmpty ? nil : verseReference,
                             type: noteType
                         )
-                        isPresented = false
+                        // Show the success toast
+                        withAnimation {
+                            showSuccessToast = true
+                        }
+                        // Dismiss the view after a delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            isPresented = false
+                        }
                     }
                     .disabled(title.isEmpty || content.isEmpty)
                 }

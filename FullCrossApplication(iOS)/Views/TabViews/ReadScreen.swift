@@ -7,6 +7,7 @@ struct ReadScreen: View {
     @State private var showNoteDialog = false
     @State private var scrollOffset: CGFloat = 0
     @GestureState private var dragOffset: CGFloat = 0
+    @State private var showSuccessToast = false
     
     init() {
         // Create the view model on the main actor
@@ -122,6 +123,12 @@ struct ReadScreen: View {
                     }
                 }
                 .padding()
+                
+                // Add the toast overlay
+                if showSuccessToast {
+                    ToastView(message: "Successfully added note", systemImage: "checkmark.circle.fill")
+                        .transition(.move(edge: .top))
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -138,6 +145,16 @@ struct ReadScreen: View {
                                 verseReference: verseRef
                             )
                             showNoteDialog = false
+                            // Show the success toast
+                            withAnimation {
+                                showSuccessToast = true
+                            }
+                            // Hide the toast after 2 seconds
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                withAnimation {
+                                    showSuccessToast = false
+                                }
+                            }
                         }
                     }
                 )
@@ -494,4 +511,5 @@ struct ScrollOffsetPreferenceKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = nextValue()
     }
-} 
+}
+
