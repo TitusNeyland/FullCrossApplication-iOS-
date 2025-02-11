@@ -53,6 +53,18 @@ struct AccountScreen: View {
                     settingsRow(icon: "pencil", title: "Edit Profile", action: onNavigateToEditProfile)
                     settingsRow(icon: "lock", title: "Change Password", action: onNavigateToChangePassword)
                     notificationRow
+                    if notificationsViewModel.isNotificationsEnabled {
+                        NavigationLink {
+                            NotificationPreferencesView(viewModel: notificationsViewModel)
+                        } label: {
+                            MenuRow(
+                                icon: "",
+                                title: "Notification Preferences",
+                                subtitle: "Customize what you want to be notified about"
+                            )
+                            .padding(.trailing, 8)
+                        }
+                    }
                 }
                 
                 // App Settings Section
@@ -62,6 +74,37 @@ struct AccountScreen: View {
                 settingsSection(title: "Support") {
                     settingsRow(icon: "questionmark.circle", title: "Help & FAQ", action: onNavigateToHelpAndFaq)
                     settingsRow(icon: "envelope", title: "Contact Support", action: onNavigateToSupport)
+                }
+                
+                // Notifications Section
+                Section(header: Text("Notifications")) {
+                    Toggle("Enable Notifications", isOn: $notificationsViewModel.isNotificationsEnabled)
+                        .onChange(of: notificationsViewModel.isNotificationsEnabled) { newValue in
+                            if newValue {
+                                notificationsViewModel.requestNotificationPermission()
+                            }
+                        }
+                    
+                    if notificationsViewModel.isNotificationsEnabled {
+                        NavigationLink {
+                            NotificationPreferencesView(viewModel: notificationsViewModel)
+                        } label: {
+                            MenuRow(
+                                icon: "",
+                                title: "Notification Preferences",
+                                subtitle: "Customize what you want to be notified about"
+                            )
+                            .padding(.trailing, 8)
+                        }
+                    }
+                }
+                .alert("Enable Notifications", isPresented: $notificationsViewModel.showPermissionAlert) {
+                    Button("Open Settings") {
+                        notificationsViewModel.openSettings()
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("To receive notifications, please enable them in your device settings.")
                 }
                 
                 // Logout Button
@@ -240,12 +283,22 @@ struct AccountScreen: View {
                 .frame(width: 24)
             Text("Notifications")
             Spacer()
-            Toggle("", isOn: $notificationsEnabled)
-                .onChange(of: notificationsEnabled) { newValue in
-                    showNotificationDialog = true
+            Toggle("", isOn: $notificationsViewModel.isNotificationsEnabled)
+                .onChange(of: notificationsViewModel.isNotificationsEnabled) { newValue in
+                    if newValue {
+                        notificationsViewModel.requestNotificationPermission()
+                    }
                 }
         }
         .padding()
+        .alert("Enable Notifications", isPresented: $notificationsViewModel.showPermissionAlert) {
+            Button("Open Settings") {
+                notificationsViewModel.openSettings()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("To receive notifications, please enable them in your device settings.")
+        }
     }
     
     private var darkModeRow: some View {

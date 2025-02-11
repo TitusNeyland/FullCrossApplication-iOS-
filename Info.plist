@@ -1,0 +1,7 @@
+<key>NSUserNotificationUsageDescription</key>
+<string>We'd like to send you notifications about new messages, service reminders, and important updates.</string>
+
+<key>UIBackgroundModes</key>
+<array>
+    <string>remote-notification</string>
+</array> 
