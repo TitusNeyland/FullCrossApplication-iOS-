@@ -326,7 +326,7 @@ struct UpcomingStreamCard: View {
         }
         .overlay {
             if showSuccessToast {
-                ToastView(message: "Added to Calendar")
+                ToastView(message: "Added to Calendar", systemImage: "checkmark.circle.fill")
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             withAnimation {
@@ -348,22 +348,6 @@ struct UpcomingStreamCard: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE"
         return formatter.string(from: stream.startTime)
-    }
-}
-
-// Add a simple toast view
-struct ToastView: View {
-    let message: String
-    
-    var body: some View {
-        Text(message)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
-            .shadow(radius: 4)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-            .zIndex(1)
     }
 }
 
