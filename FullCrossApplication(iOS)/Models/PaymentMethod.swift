@@ -48,27 +48,27 @@ struct PaymentMethod: Identifiable {
         PaymentMethod(
             name: "Venmo",
             iconName: "venmo.logo",
-            handle: "@Titus-Neyland",
+            handle: "@FullCross",
             description: "Send your gift through Venmo",
             deepLink: URL(string: "venmo://paycharge?txn=pay&recipients=Titus-Neyland"),
             webLink: URL(string: "https://venmo.com/Titus-Neyland")
         ),
-        PaymentMethod(
-            name: "Zelle",
-            iconName: "zelle.logo",
-            handle: "donate@fullcross.org",
-            description: "Direct bank transfer using Zelle",
-            deepLink: nil,
-            webLink: nil
-        ),
-        PaymentMethod(
-            name: "Apple Pay",
-            iconName: "apple.logo",
-            handle: "donate@fullcross.org",
-            description: "Quick and secure Apple Pay donation",
-            deepLink: nil,
-            webLink: nil
-        ),
+//        PaymentMethod(
+//            name: "Zelle",
+//            iconName: "zelle.logo",
+//            handle: "donate@fullcross.org",
+//            description: "Direct bank transfer using Zelle",
+//            deepLink: nil,
+//            webLink: nil
+//        ),
+//        PaymentMethod(
+//            name: "Apple Pay",
+//            iconName: "apple.logo",
+//            handle: "donate@fullcross.org",
+//            description: "Quick and secure Apple Pay donation",
+//            deepLink: nil,
+//            webLink: nil
+//        ),
         PaymentMethod(
             name: "Givelify",
             iconName: "givelify.logo",
