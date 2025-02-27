@@ -53,25 +53,13 @@ struct DonateScreen: View {
                 .frame(maxWidth: .infinity)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.accentColor.opacity(0.1))
+                        .fill(Color.clear)
                 )
                 .padding(.horizontal)
                 
                 Spacer(minLength: 24)
             }
         }
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(.systemBackground),
-                    Color(.systemBackground).opacity(0.95),
-                    Color.accentColor.opacity(0.1)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        )
         .navigationTitle("")
     }
 }
