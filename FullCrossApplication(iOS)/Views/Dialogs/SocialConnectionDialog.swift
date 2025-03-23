@@ -194,7 +194,15 @@ struct SearchBar: View {
 
 struct SearchResultRow: View {
     let user: UserProfile
-    let contactsViewModel: ContactsViewModel
+    @ObservedObject var contactsViewModel: ContactsViewModel
+    
+    var isPending: Bool {
+        contactsViewModel.pendingRequestIds.contains(user.id)
+    }
+    
+    var isAccepted: Bool {
+        contactsViewModel.acceptedRequestIds.contains(user.id)
+    }
     
     var body: some View {
         HStack {
@@ -210,20 +218,36 @@ struct SearchResultRow: View {
             
             switch user.friendshipStatus {
             case .none:
-                Button("Add Friend") {
-                    Task {
-                        await contactsViewModel.sendFriendRequest(
-                            toUserId: user.id,
-                            toUserName: "\(user.firstName) \(user.lastName)"
-                        )
+                if isPending {
+                    Text("Pending")
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(8)
+                } else if isAccepted {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                } else {
+                    Button("Add Friend") {
+                        Task {
+                            await contactsViewModel.sendFriendRequest(
+                                toUserId: user.id,
+                                toUserName: "\(user.firstName) \(user.lastName)"
+                            )
+                        }
                     }
+                    .buttonStyle(.bordered)
+                    .tint(.green)
                 }
-                .buttonStyle(.bordered)
-                .tint(.green)
                 
             case .pending:
                 Text("Pending")
                     .foregroundColor(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color(.systemGray5))
+                    .cornerRadius(8)
                 
             case .accepted:
                 Image(systemName: "checkmark.circle.fill")
@@ -232,7 +256,10 @@ struct SearchResultRow: View {
             case .declined:
                 Button("Try Again") {
                     Task {
-                        await contactsViewModel.sendFriendRequest(toUserId: user.id, toUserName: "\(user.firstName) \(user.lastName)")
+                        await contactsViewModel.sendFriendRequest(
+                            toUserId: user.id,
+                            toUserName: "\(user.firstName) \(user.lastName)"
+                        )
                     }
                 }
                 .buttonStyle(.bordered)

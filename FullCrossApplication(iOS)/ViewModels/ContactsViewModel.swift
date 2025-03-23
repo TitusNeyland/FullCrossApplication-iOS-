@@ -15,6 +15,8 @@ class ContactsViewModel: ObservableObject {
     @Published private(set) var isSearching = false
     @Published private(set) var friends: [UserProfile] = []
     @Published private(set) var pendingFriendRequests: [UserProfile] = []
+    @Published private(set) var pendingRequestIds: Set<String> = []
+    @Published private(set) var acceptedRequestIds: Set<String> = []
     
     // MARK: - Private Properties
     private let authViewModel: AuthViewModel
@@ -239,8 +241,11 @@ class ContactsViewModel: ObservableObject {
     
     func sendFriendRequest(toUserId: String, toUserName: String) async {
         do {
+            pendingRequestIds.insert(toUserId)
+            
             guard let currentUserId = Auth.auth().currentUser?.uid else {
                 print("❌ Friend Request Failed: User not logged in")
+                pendingRequestIds.remove(toUserId)
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not logged in"])
             }
             
@@ -314,6 +319,7 @@ class ContactsViewModel: ObservableObject {
                 await searchUsers(searchQuery)
             }
         } catch {
+            pendingRequestIds.remove(toUserId)
             print("❌ Friend Request Failed: \(error.localizedDescription)")
             self.error = "Failed to send friend request: \(error.localizedDescription)"
         }
@@ -369,11 +375,10 @@ class ContactsViewModel: ObservableObject {
     private func setupPendingFriendRequestsListener() {
         guard let currentUserId = Auth.auth().currentUser?.uid else { return }
         
-        // Listen for pending friend requests
+        // Listen for all friendship changes
         listenerRegistration = db.collection("users")
             .document(currentUserId)
             .collection("friendships")
-            .whereField("status", isEqualTo: "pending")
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
@@ -382,41 +387,25 @@ class ContactsViewModel: ObservableObject {
                     return
                 }
                 
-                Task {
-                    do {
-                        let pendingRequests = try await withThrowingTaskGroup(of: UserProfile?.self) { group in
-                            for doc in snapshot?.documents ?? [] {
-                                let friendId = doc.documentID
-                                group.addTask {
-                                    let friendDoc = try await self.db.collection("users")
-                                        .document(friendId)
-                                        .getDocument()
-                                    
-                                    guard friendDoc.exists else { return nil }
-                                    
-                                    return UserProfile(
-                                        id: friendDoc.documentID,
-                                        firstName: friendDoc.get("firstName") as? String ?? "",
-                                        lastName: friendDoc.get("lastName") as? String ?? "",
-                                        phoneNumber: friendDoc.get("phoneNumber") as? String ?? "",
-                                        friendshipStatus: .pending
-                                    )
-                                }
-                            }
-                            
-                            var profiles: [UserProfile] = []
-                            for try await profile in group {
-                                if let profile = profile {
-                                    profiles.append(profile)
-                                }
-                            }
-                            return profiles
-                        }
-                        
-                        self.pendingFriendRequests = pendingRequests
-                    } catch {
-                        self.error = "Failed to process friend requests: \(error.localizedDescription)"
+                for change in snapshot?.documentChanges ?? [] {
+                    let doc = change.document
+                    let friendId = doc.documentID
+                    let status = doc.get("status") as? String
+                    
+                    switch status {
+                    case "accepted":
+                        self.pendingRequestIds.remove(friendId)
+                        self.acceptedRequestIds.insert(friendId)
+                    case "pending":
+                        self.pendingRequestIds.insert(friendId)
+                    default:
+                        self.pendingRequestIds.remove(friendId)
+                        self.acceptedRequestIds.remove(friendId)
                     }
+                }
+                
+                Task {
+                    await self.fetchFriends()
                 }
             }
     }
