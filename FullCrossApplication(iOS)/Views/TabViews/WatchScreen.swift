@@ -145,7 +145,7 @@ struct FeaturedStreamCard: View {
     var body: some View {
         Card {
             VStack(spacing: 0) {
-                // Image section
+                // Image section with dynamic height
                 ZStack(alignment: .topLeading) {
                     Rectangle()
                         .fill(Color(.systemGray5))
@@ -153,9 +153,8 @@ struct FeaturedStreamCard: View {
                             Image("cross.logo")
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(height: 200)
                         }
-                        .frame(height: 200)
+                        .frame(height: UIScreen.main.bounds.height * 0.25) // Dynamic height based on screen size
                     
                     // Actual image
                     AsyncImage(url: URL(string: stream.thumbnailUrl)) { image in
@@ -165,7 +164,7 @@ struct FeaturedStreamCard: View {
                     } placeholder: {
                         EmptyView()
                     }
-                    .frame(height: 200)
+                    .frame(height: UIScreen.main.bounds.height * 0.25) // Match the container height
                     .clipped()
                     
                     // Live indicator
@@ -187,12 +186,12 @@ struct FeaturedStreamCard: View {
                     }
                 }
                 
-                // Content section
+                // Content section with adaptive spacing
                 VStack(alignment: .leading, spacing: 12) {
                     Text(stream.title)
                         .font(.title3)
                         .fontWeight(.bold)
-                        .padding(.top, 30)
+                        .padding(.top, UIScreen.main.bounds.height * 0.04) // Dynamic top padding
                     
                     HStack {
                         Image(systemName: "eye")
