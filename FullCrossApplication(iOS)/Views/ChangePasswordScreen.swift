@@ -23,7 +23,7 @@ struct ChangePasswordScreen: View {
                     // Current password
                     SecureField("Current Password", text: $currentPassword)
                         .textFieldStyle(.roundedBorder)
-                        .onChange(of: currentPassword) { _ in
+                        .onChange(of: currentPassword) { _, _ in
                             authViewModel.clearError()
                         }
                     
@@ -31,7 +31,7 @@ struct ChangePasswordScreen: View {
                     VStack(alignment: .leading, spacing: 4) {
                         SecureField("New Password", text: $newPassword)
                             .textFieldStyle(.roundedBorder)
-                            .onChange(of: newPassword) { _ in
+                            .onChange(of: newPassword) { _, _ in
                                 authViewModel.clearError()
                             }
                         
@@ -43,7 +43,7 @@ struct ChangePasswordScreen: View {
                     // Confirm new password
                     SecureField("Confirm New Password", text: $confirmNewPassword)
                         .textFieldStyle(.roundedBorder)
-                        .onChange(of: confirmNewPassword) { _ in
+                        .onChange(of: confirmNewPassword) { _, _ in
                             authViewModel.clearError()
                         }
                     

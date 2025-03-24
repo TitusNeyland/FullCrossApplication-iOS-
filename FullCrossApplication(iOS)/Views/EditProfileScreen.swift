@@ -23,14 +23,14 @@ struct EditProfileScreen: View {
                     // First Name
                     TextField("First Name", text: $firstName)
                         .textFieldStyle(.roundedBorder)
-                        .onChange(of: firstName) { _ in
+                        .onChange(of: firstName) { _, _ in
                             authViewModel.clearError()
                         }
                     
                     // Last Name
                     TextField("Last Name", text: $lastName)
                         .textFieldStyle(.roundedBorder)
-                        .onChange(of: lastName) { _ in
+                        .onChange(of: lastName) { _, _ in
                             authViewModel.clearError()
                         }
                     
@@ -38,7 +38,7 @@ struct EditProfileScreen: View {
                     TextField("Phone Number", text: $phoneNumber)
                         .textFieldStyle(.roundedBorder)
                         .keyboardType(.phonePad)
-                        .onChange(of: phoneNumber) { _ in
+                        .onChange(of: phoneNumber) { _, _ in
                             authViewModel.clearError()
                         }
                     
@@ -47,7 +47,7 @@ struct EditProfileScreen: View {
                         .textFieldStyle(.roundedBorder)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
-                        .onChange(of: email) { _ in
+                        .onChange(of: email) { _, _ in
                             authViewModel.clearError()
                         }
                     

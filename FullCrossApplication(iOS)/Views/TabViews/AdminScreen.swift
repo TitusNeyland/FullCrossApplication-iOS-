@@ -194,7 +194,7 @@ struct AdminScreen: View {
         .onAppear {
             viewModel.loadStreamSettings()
         }
-        .onChange(of: viewModel.streamSettings) { settings in
+        .onChange(of: viewModel.streamSettings) { _, settings in
             if let url = settings?.streamUrl {
                 streamUrl = url
             }

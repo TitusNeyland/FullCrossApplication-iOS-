@@ -42,13 +42,13 @@ struct LoginScreen: View {
                         .textFieldStyle(CustomTextFieldStyle())
                         .textContentType(.emailAddress)
                         .autocapitalization(.none)
-                        .onChange(of: email) { _ in
+                        .onChange(of: email) { _, _ in
                             authViewModel.clearError()
                         }
                     
                     SecureField("Password", text: $password)
                         .textFieldStyle(CustomTextFieldStyle())
-                        .onChange(of: password) { _ in
+                        .onChange(of: password) { _, _ in
                             authViewModel.clearError()
                         }
                     
@@ -105,7 +105,7 @@ struct LoginScreen: View {
                 .ignoresSafeArea()
             )
         }
-        .onChange(of: authViewModel.currentUser) { user in
+        .onChange(of: authViewModel.currentUser) { _, user in
             if user != nil {
                 onLoginSuccess()
             }
