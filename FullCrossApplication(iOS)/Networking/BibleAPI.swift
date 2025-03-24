@@ -64,9 +64,9 @@ class BibleAPIImpl: BibleAPI {
             decoder.keyDecodingStrategy = .convertFromSnakeCase
             
             // Print the response data for debugging
-            if let jsonString = String(data: data, encoding: .utf8) {
+           // if let jsonString = String(data: data, encoding: .utf8) {
                 //print("Response JSON: \(jsonString)")
-            }
+            //}
             
             return try decoder.decode(T.self, from: data)
         } catch {

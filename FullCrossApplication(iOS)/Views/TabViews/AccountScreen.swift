@@ -253,7 +253,7 @@ struct AccountScreen: View {
             Text("Notifications")
             Spacer()
             Toggle("", isOn: $notificationsViewModel.isNotificationsEnabled)
-                .onChange(of: notificationsViewModel.isNotificationsEnabled) { newValue in
+                .onChange(of: notificationsViewModel.isNotificationsEnabled) { _, newValue in
                     if newValue {
                         notificationsViewModel.requestNotificationPermission()
                     }
@@ -344,7 +344,7 @@ struct ProfileImagePicker: View {
                 .offset(x: 8, y: 2)
             }
         }
-        .onChange(of: selectedItem) { newItem in
+        .onChange(of: selectedItem) { _, newItem in
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {

@@ -24,7 +24,7 @@ struct SignUpScreen: View {
                         .textFieldStyle(CustomTextFieldStyle())
                         .textContentType(.givenName)
                         .autocapitalization(.words)
-                        .onChange(of: firstName) { _ in
+                        .onChange(of: firstName) { _, _ in
                             authViewModel.clearError()
                         }
                     
@@ -33,7 +33,7 @@ struct SignUpScreen: View {
                         .textFieldStyle(CustomTextFieldStyle())
                         .textContentType(.familyName)
                         .autocapitalization(.words)
-                        .onChange(of: lastName) { _ in
+                        .onChange(of: lastName) { _, _ in
                             authViewModel.clearError()
                         }
                     
@@ -43,7 +43,7 @@ struct SignUpScreen: View {
                         .textContentType(.emailAddress)
                         .autocapitalization(.none)
                         .keyboardType(.emailAddress)
-                        .onChange(of: email) { _ in
+                        .onChange(of: email) { _, _ in
                             authViewModel.clearError()
                         }
                     
@@ -51,7 +51,7 @@ struct SignUpScreen: View {
                     VStack(alignment: .leading, spacing: 4) {
                         SecureField("Password", text: $password)
                             .textFieldStyle(CustomTextFieldStyle())
-                            .onChange(of: password) { _ in
+                            .onChange(of: password) { _, _ in
                                 authViewModel.clearError()
                             }
                         
@@ -64,7 +64,7 @@ struct SignUpScreen: View {
                     // Confirm Password
                     SecureField("Confirm Password", text: $confirmPassword)
                         .textFieldStyle(CustomTextFieldStyle())
-                        .onChange(of: confirmPassword) { _ in
+                        .onChange(of: confirmPassword) { _, _ in
                             authViewModel.clearError()
                         }
                     
@@ -139,7 +139,7 @@ struct SignUpScreen: View {
                 .ignoresSafeArea()
             )
         }
-        .onChange(of: authViewModel.currentUser) { user in
+        .onChange(of: authViewModel.currentUser) { _, user in
             if user != nil {
                 onSignUpSuccess()
             }

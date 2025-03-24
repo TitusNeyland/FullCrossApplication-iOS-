@@ -73,7 +73,7 @@ struct SocialConnectionDialog: View {
                 content: {
                     VStack(spacing: 12) {
                         SearchBar(text: $searchQuery)
-                            .onChange(of: searchQuery) { newValue in
+                            .onChange(of: searchQuery) { _, newValue in
                                 Task {
                                     await contactsViewModel.searchUsers(newValue)
                                 }
