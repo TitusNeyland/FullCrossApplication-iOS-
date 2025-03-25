@@ -94,46 +94,52 @@ class NotesViewModel: ObservableObject {
     }
     
     private func loadNotesForDate(_ date: Date) {
-        guard let userId = auth.currentUser?.uid else { return }
-        
-        db.collection("notes")
-            .whereField("userId", isEqualTo: userId)
-            .order(by: "date", descending: true)
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self,
-                      let documents = snapshot?.documents else {
-                    print("Error fetching notes: \(error?.localizedDescription ?? "Unknown error")")
-                    return
-                }
+        Task {
+            do {
+                let userId = try getCurrentUserId()
                 
-                let notes = documents.compactMap { document -> Note? in
-                    guard let timestamp = document.get("date") as? Timestamp,
-                          let title = document.get("title") as? String,
-                          let content = document.get("content") as? String,
-                          let typeString = document.get("type") as? String,
-                          let type = NoteType(rawValue: typeString),
-                          let userId = document.get("userId") as? String else {
-                        return nil
+                db.collection("notes")
+                    .whereField("userId", isEqualTo: userId)
+                    .order(by: "date", descending: true)
+                    .addSnapshotListener { [weak self] snapshot, error in
+                        guard let self = self,
+                              let documents = snapshot?.documents else {
+                            print("Error fetching notes: \(error?.localizedDescription ?? "Unknown error")")
+                            return
+                        }
+                        
+                        let notes = documents.compactMap { document -> Note? in
+                            guard let timestamp = document.get("date") as? Timestamp,
+                                  let title = document.get("title") as? String,
+                                  let content = document.get("content") as? String,
+                                  let typeString = document.get("type") as? String,
+                                  let type = NoteType(rawValue: typeString),
+                                  let userId = document.get("userId") as? String else {
+                                return nil
+                            }
+                            
+                            return Note(
+                                id: document.documentID,
+                                date: timestamp.dateValue(),
+                                title: title,
+                                content: content,
+                                verseReference: document.get("verseReference") as? String,
+                                type: type,
+                                userId: userId
+                            )
+                        }
+                        
+                        DispatchQueue.main.async {
+                            self.notes = notes
+                            
+                            let calendar = Calendar.current
+                            self.datesWithNotes = Set(notes.map { calendar.startOfDay(for: $0.date) })
+                        }
                     }
-                    
-                    return Note(
-                        id: document.documentID,
-                        date: timestamp.dateValue(),
-                        title: title,
-                        content: content,
-                        verseReference: document.get("verseReference") as? String,
-                        type: type,
-                        userId: userId
-                    )
-                }
-                
-                DispatchQueue.main.async {
-                    self.notes = notes
-                    
-                    let calendar = Calendar.current
-                    self.datesWithNotes = Set(notes.map { calendar.startOfDay(for: $0.date) })
-                }
+            } catch {
+                print("Error loading notes: \(error)")
             }
+        }
     }
     
     func addNote(title: String, content: String, verseReference: String?, type: NoteType) {

@@ -37,7 +37,8 @@ class FirestoreNoteRepository: NoteRepository {
                           let title = document.get("title") as? String,
                           let content = document.get("content") as? String,
                           let typeRaw = document.get("type") as? String,
-                          let type = NoteType(rawValue: typeRaw) else {
+                          let type = NoteType(rawValue: typeRaw),
+                          let userId = document.get("userId") as? String else {
                         print("Failed to parse document \(document.documentID)")
                         return nil
                     }
@@ -88,7 +89,7 @@ class FirestoreNoteRepository: NoteRepository {
     }
     
     func insertNote(_ note: Note) async throws {
-        let docRef = try await db.collection("notes").addDocument(data: [
+        try await db.collection("notes").addDocument(data: [
             "date": Timestamp(date: note.date),
             "title": note.title,
             "content": note.content,
@@ -98,7 +99,7 @@ class FirestoreNoteRepository: NoteRepository {
         ])
         
         // Store the document ID directly instead of trying to convert it to Int64
-        print("Created note with ID: \(docRef.documentID)")
+       // print("Created note with ID: \(docRef.documentID)")
     }
     
     func updateNote(_ note: Note) async throws {
